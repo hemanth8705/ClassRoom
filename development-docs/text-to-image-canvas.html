@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Empty Canvas: From Noise to Tokens</title>
+<style>
+  :root {
+    --bg: #fafaf7; --card: #ffffff; --ink: #1d1d1b; --muted: #666660; --line: #dcdcd4;
+    --accent: #2f6fed; --accent2: #e8590c; --code: #f1f1ea; --good: #2b8a3e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #16161a; --card: #1f1f25; --ink: #ecece6; --muted: #a0a09a; --line: #34343c;
+            --accent: #6c9bff; --accent2: #ff9a57; --code: #2a2a32; --good: #69db7c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 80px; }
+  h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 6px; }
+  h2 { font-size: 1.3rem; margin: 0 0 8px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+            padding: 20px; margin: 20px 0; }
+  .step { display: inline-block; background: var(--accent); color: #fff; border-radius: 999px;
+          font-size: .78rem; font-weight: 600; padding: 2px 10px; margin-bottom: 6px; }
+  code, .mono { font-family: ui-monospace, Consolas, monospace; background: var(--code);
+                padding: 1px 6px; border-radius: 4px; font-size: .92em; }
+  .controls { display: flex; flex-wrap: wrap; gap: 14px 22px; margin: 12px 0 16px; }
+  .controls label { display: flex; flex-direction: column; font-size: .85rem; color: var(--muted); gap: 4px; }
+  .controls select, .controls input[type=number], .controls input[type=range] {
+    font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 4px 8px; min-width: 120px; }
+  .shape { font-family: ui-monospace, Consolas, monospace; background: var(--code);
+           border-radius: 8px; padding: 10px 14px; margin: 12px 0; overflow-x: auto; white-space: pre; }
+  .shape b { color: var(--accent2); }
+  .row { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .callout { border-left: 4px solid var(--accent2); background: var(--code); padding: 10px 14px;
+             border-radius: 0 8px 8px 0; margin: 14px 0; }
+  .callout.blue { border-left-color: var(--accent); }
+  .note { color: var(--muted); font-size: .88rem; }
+  canvas { max-width: 100%; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  button { font: inherit; background: var(--accent); color: #fff; border: 0; border-radius: 8px;
+           padding: 8px 16px; cursor: pointer; }
+  button.alt { background: var(--code); color: var(--ink); border: 1px solid var(--line); }
+  table.vec { border-collapse: collapse; font-family: ui-monospace, Consolas, monospace; font-size: .85rem; }
+  table.vec td, table.vec th { border: 1px solid var(--line); padding: 2px 8px; text-align: right; }
+  table.vec th { background: var(--code); }
+  #flat-wrap { position: relative; border: 1px solid var(--line); border-radius: 8px;
+               overflow: auto; background: var(--bg); }
+  #flat-stage { position: relative; }
+  .tok { position: absolute; border-radius: 2px; transition: left .9s ease, top .9s ease, width .9s ease, height .9s ease; }
+  .tok.hl { outline: 2px solid var(--accent2); z-index: 5; }
+  .bar { height: 18px; border-radius: 4px; margin: 4px 0; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .85rem; color: var(--muted); }
+  ul { padding-left: 1.2em; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>The Empty Canvas: From Noise to Tokens</h1>
+<p class="sub">Before a text-to-image model can paint anything, it needs a canvas it can read. This page shows how that canvas is made and how it is turned into the same "list of rows" format as your text. Everything here is interactive.</p>
+
+<section>
+  <h2>Pick the picture you want</h2>
+  <div class="controls">
+    <label>Image width (pixels)
+      <select id="imgW"><option>512</option><option selected>768</option><option>1024</option></select></label>
+    <label>Image height (pixels)
+      <select id="imgH"><option>384</option><option selected>512</option><option>768</option></select></label>
+    <label>Length (pixel frames)
+      <select id="vidF"><option value="1" selected>1 (an image)</option><option value="25">25 (short clip)</option><option value="121">121 (longer clip)</option></select></label>
+    <label>Channels per cell (C)
+      <select id="chC"><option>16</option><option>64</option><option selected>128</option></select></label>
+    <label>Model width (W)
+      <select id="mdW"><option>1024</option><option>2048</option><option selected>4096</option></select></label>
+    <label>Seed
+      <input type="number" id="seed" value="42" min="0" max="999999"></label>
+  </div>
+  <div class="shape" id="shapeBox"></div>
+  <p class="note">Assumptions used here (illustrative, taken from the LTX family from memory, not verified against your checkpoint): each cell covers a 32 &times; 32 block of pixels, every 8 video frames become 1 latent frame, C = 128 and W = 4096. The ideas are the same for any model; only the numbers change.</p>
+</section>
+
+<!-- ===================== STEP A ===================== -->
+<section>
+  <span class="step">STEP A</span>
+  <h2>Make the starting canvas</h2>
+
+  <h3>A1. The picture is first shrunk into a grid of "cells"</h3>
+  <p>Working on every pixel would be slow, so the model works on a much smaller grid. Each <b>32 &times; 32 block of pixels</b> will be represented by <b>one cell</b>. A helper called the VAE does this shrinking and, at the very end, the expanding back.</p>
+  <canvas id="pixCanvas" width="480" height="320"></canvas>
+  <p class="note" id="pixNote"></p>
+
+  <h3>A2. Each cell holds a list of numbers, not a colour</h3>
+  <p>A cell is not "red" or "blue". It holds <b>C numbers</b> (its <i>channels</i>). Think of C as how many measurements the VAE uses to describe one block of the picture: shapes, textures, brightness, and things we don't have words for. At the start we haven't painted anything, so every number is <b>random noise</b>.</p>
+  <div class="row">
+    <div>
+      <canvas id="noiseCanvas"></canvas>
+      <p class="note">Click any cell. (For display, three of its numbers are used as red, green, blue. The other C&minus;3 are hidden.)</p>
+    </div>
+    <div style="flex:1; min-width:260px">
+      <div id="cellInfo"></div>
+    </div>
+  </div>
+
+  <h3>A3. The 5 dimensions, in plain words</h3>
+  <p>The canvas has the shape <code>[batch, C, frames, height, width]</code>. Humans can picture 3 directions, so split it like this:</p>
+  <ul>
+    <li><b>height &times; width</b> is the flat sheet of paper (here the grid above).</li>
+    <li><b>frames</b> is how many such sheets are stacked, like pages in a flip book. An image has 1 sheet.</li>
+    <li><b>C</b> is how many numbers are written inside each cell of each sheet. It is not a 4th direction in space, it is the depth of the data stored in each cell.</li>
+    <li><b>batch</b> is how many separate canvases we make at once. We make 1.</li>
+  </ul>
+  <canvas id="stackCanvas" height="200"></canvas>
+</section>
+
+<!-- ===================== STEP B ===================== -->
+<section>
+  <span class="step">STEP B</span>
+  <h2>Cut the canvas into tokens</h2>
+  <p>The model doesn't read a 2D sheet. It reads a <b>list of rows</b>, the same format as the text grid from the previous article. So we take every cell of every sheet and write it as one row. Each cell becomes one <b>image token</b>.</p>
+
+  <div class="row" style="margin-bottom:10px">
+    <button id="flatBtn">Flatten the grid into a list</button>
+    <button id="unflatBtn" class="alt">Put it back</button>
+  </div>
+  <div id="flat-wrap"><div id="flat-stage"></div></div>
+  <p class="note" id="flatNote">Hover a cell to see its position in the list. Token number = row &times; width + column (for the first frame).</p>
+
+  <div class="callout blue">
+    <b>The count.</b> Number of tokens <code>N = frames &times; height &times; width</code>. For the picture you picked this is shown in the shape box at the top. Our default is 1 &times; 16 &times; 24 = <b>384</b>. (Not 348.)
+  </div>
+
+  <h3>B2. Each token is a row of C numbers</h3>
+  <p>After flattening, the canvas is a table with <b>N rows</b> and <b>C columns</b>. This is exactly the shape of the text grid, <code>[tokens &times; dimensions]</code>:</p>
+  <div id="tokTable"></div>
+
+  <h3>B3. What are C and W? They are different things</h3>
+  <div class="callout">
+    <p style="margin-top:0"><b>C (channels)</b> is decided by the <b>VAE</b>. It is how many numbers describe one cell of the shrunken picture. It has nothing to do with how many inputs the model accepts.</p>
+    <p style="margin-bottom:0"><b>W (model width)</b> is decided by the <b>main model</b>. It is the length of the row the model uses <i>internally</i> for every token, like the width of the page the model does all its thinking on. It is usually much larger than C because the model needs more room to think about a cell than the VAE needs to store it.</p>
+  </div>
+  <p>The two are different sizes, so one simple layer sits between them. It is a single table of learned numbers of size <b>C &times; W</b>. Each token's row (length C) is multiplied by this table and comes out as a longer row (length W). Same tokens, same order, just re-written on the model's wider page:</p>
+  <div id="projBox"></div>
+
+  <div class="shape" id="shapeFlow"></div>
+  <p>That's the end of Step B. The image is now in the same form as the text: <b>a list of rows</b>. In the next part we'll see how the model uses both lists together.</p>
+</section>
+
+<!-- ===================== C and W explained ===================== -->
+<section>
+  <span class="step">DEEP DIVE</span>
+  <h2>C and W, explained with small numbers</h2>
+
+  <h3>1. What C means: the cat/dog scorecard, but for pieces of a picture</h3>
+  <p>Remember the scorecard for words (animal, hair, queen, king, furniture)? A cell of the picture gets a scorecard too. Here is a toy one with <b>C = 5</b> features. Each row is one cell, the way "cat" was one row before.</p>
+  <table class="vec">
+    <tr><th>cell of the picture</th><th>brightness</th><th>redness</th><th>blueness</th><th>edginess</th><th>sandy texture</th></tr>
+    <tr><th>cell in the sky</th><td>0.90</td><td>0.30</td><td>0.80</td><td>0.05</td><td>0.00</td></tr>
+    <tr><th>cell on the sand</th><td>0.70</td><td>0.60</td><td>0.20</td><td>0.10</td><td>0.90</td></tr>
+    <tr><th>cell on the car</th><td>0.40</td><td>0.90</td><td>0.10</td><td>0.80</td><td>0.00</td></tr>
+  </table>
+  <p>Read it the same way as before: a sky cell is bright and blue with no edges, a sand cell is sandy, a car cell is red with strong edges. <b>C is the number of columns</b>, which here is 5. A real VAE uses something like 128 columns.</p>
+  <div class="callout blue">
+    <b>Honest note:</b> real channels have no names like "redness". The VAE learns its own 128 columns while being trained to shrink and rebuild millions of pictures. No single column means one thing you could point to. Together they hold enough information to rebuild the 32 &times; 32 block of pixels the cell stands for.
+  </div>
+  <p>At the start of generation these numbers are random noise. By the end of the denoising steps they hold real values like the ones in the table above, and the VAE decoder turns them back into pixels.</p>
+
+  <h3>2. What W means: a plain neural-network picture</h3>
+  <p>You may know the simplest model there is: <b>linear regression</b>. It takes some inputs (<code>x1, x2, x3</code>), multiplies each by a learned weight, adds them up, and gives one output:</p>
+  <div class="shape">y = w1*x1 + w2*x2 + w3*x3</div>
+  <p>Now imagine doing that <b>several times side by side</b>, each with its own set of weights, all reading the same inputs. You get several outputs instead of one. That is exactly what the "linear layer" between C and W is. Here is a tiny version with <b>C = 3</b> inputs and <b>W = 4</b> outputs:</p>
+
+  <svg viewBox="0 0 560 260" style="max-width:560px;width:100%;display:block;margin:8px 0" role="img" aria-label="Three input nodes fully connected to four output nodes">
+    <g stroke="currentColor" stroke-opacity=".28" stroke-width="1.2">
+      <line x1="150" y1="60"  x2="410" y2="40"/><line x1="150" y1="60"  x2="410" y2="105"/><line x1="150" y1="60"  x2="410" y2="170"/><line x1="150" y1="60"  x2="410" y2="235"/>
+      <line x1="150" y1="130" x2="410" y2="40"/><line x1="150" y1="130" x2="410" y2="105"/><line x1="150" y1="130" x2="410" y2="170"/><line x1="150" y1="130" x2="410" y2="235"/>
+      <line x1="150" y1="200" x2="410" y2="40"/><line x1="150" y1="200" x2="410" y2="105"/><line x1="150" y1="200" x2="410" y2="170"/><line x1="150" y1="200" x2="410" y2="235"/>
+    </g>
+    <g fill="var(--accent)"><circle cx="150" cy="60" r="16"/><circle cx="150" cy="130" r="16"/><circle cx="150" cy="200" r="16"/></g>
+    <g fill="var(--accent2)"><circle cx="410" cy="40" r="16"/><circle cx="410" cy="105" r="16"/><circle cx="410" cy="170" r="16"/><circle cx="410" cy="235" r="16"/></g>
+    <g fill="currentColor" font-size="13" font-family="system-ui" text-anchor="end">
+      <text x="126" y="64">brightness 0.9</text><text x="126" y="134">redness 0.3</text><text x="126" y="204">blueness 0.8</text>
+    </g>
+    <g fill="currentColor" font-size="13" font-family="system-ui">
+      <text x="436" y="44">1.05</text><text x="436" y="109">0.25</text><text x="436" y="174">0.89</text><text x="436" y="239">-0.68</text>
+    </g>
+    <g fill="currentColor" font-size="12" font-family="system-ui" text-anchor="middle">
+      <text x="150" y="20" fill="var(--accent)">C = 3 numbers in</text>
+      <text x="410" y="14" fill="var(--accent2)">W = 4 numbers out</text>
+    </g>
+  </svg>
+  <p class="note">Every line carries one learned weight. 3 inputs &times; 4 outputs = 12 weights, so a table of 3 &times; 4.</p>
+
+  <h3>3. The arithmetic, with the sky cell</h3>
+  <p>The sky cell from the table, using only its first three features: <code>x = [0.9, 0.3, 0.8]</code>. Suppose training has produced this 3 &times; 4 weight table:</p>
+  <table class="vec">
+    <tr><th></th><th>out 1</th><th>out 2</th><th>out 3</th><th>out 4</th></tr>
+    <tr><th>from brightness</th><td>1.0</td><td>-0.5</td><td>0.2</td><td>0.0</td></tr>
+    <tr><th>from redness</th><td>0.5</td><td>1.0</td><td>-0.3</td><td>0.4</td></tr>
+    <tr><th>from blueness</th><td>0.0</td><td>0.5</td><td>1.0</td><td>-1.0</td></tr>
+  </table>
+  <div class="shape">out 1 = 0.9*1.0  + 0.3*0.5 + 0.8*0.0  =  0.90 + 0.15 + 0.00 =  1.05
+out 2 = 0.9*-0.5 + 0.3*1.0 + 0.8*0.5  = -0.45 + 0.30 + 0.40 =  0.25
+out 3 = 0.9*0.2  + 0.3*-0.3 + 0.8*1.0 =  0.18 - 0.09 + 0.80 =  0.89
+out 4 = 0.9*0.0  + 0.3*0.4 + 0.8*-1.0 =  0.00 + 0.12 - 0.80 = -0.68</div>
+  <p>3 numbers went in and 4 came out. Each output is a different <b>blend</b> of the same three inputs. The weights are not picked by hand; they are learned during training, just like the weights in linear regression.</p>
+
+  <h3>4. So what is W, and why is it bigger than C?</h3>
+  <ul>
+    <li><b>C</b> is how many numbers the <b>VAE</b> needs to store one cell. It only has to be enough to rebuild the pixels.</li>
+    <li><b>W</b> is how many numbers the <b>main model</b> uses to hold one token while it thinks. That includes "what is this cell", "what is next to it", and "which words from the prompt matter to it". That needs far more room than storing the cell.</li>
+    <li>In the toy example above, C = 3 and W = 4. In the real model, C = 128 and W = 4096, so 128 inputs fan out to 4096 outputs, and the weight table is 128 &times; 4096 = 524,288 numbers.</li>
+    <li>The only job of this layer is to move each token from the VAE's row length (C) to the model's row length (W). The number of tokens and their order do not change.</li>
+  </ul>
+
+  <h3>5. Where each one lives</h3>
+  <svg viewBox="0 0 700 120" style="max-width:700px;width:100%;display:block;margin:8px 0" role="img" aria-label="Pipeline: pixels, VAE encoder, C numbers per cell, linear layer, W numbers per token, transformer layers">
+    <defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+    <g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#arr)">
+      <line x1="112" y1="50" x2="140" y2="50"/><line x1="240" y1="50" x2="272" y2="50"/>
+      <line x1="372" y1="50" x2="404" y2="50"/><line x1="504" y1="50" x2="536" y2="50"/>
+    </g>
+    <g fill="var(--code)" stroke="currentColor" stroke-opacity=".5">
+      <rect x="10" y="25" width="100" height="50" rx="8"/><rect x="142" y="25" width="98" height="50" rx="8"/>
+      <rect x="274" y="25" width="98" height="50" rx="8"/><rect x="406" y="25" width="98" height="50" rx="8"/>
+      <rect x="538" y="25" width="150" height="50" rx="8"/>
+    </g>
+    <g fill="currentColor" font-size="12" font-family="system-ui" text-anchor="middle">
+      <text x="60" y="48">picture</text><text x="60" y="64">pixels</text>
+      <text x="191" y="48">VAE</text><text x="191" y="64">shrinks it</text>
+      <text x="323" y="48">C numbers</text><text x="323" y="64">per cell</text>
+      <text x="455" y="48">linear layer</text><text x="455" y="64">C &rarr; W</text>
+      <text x="613" y="48">main model</text><text x="613" y="64">works at width W</text>
+    </g>
+    <g fill="currentColor" font-size="11" font-family="system-ui" text-anchor="middle" opacity=".7">
+      <text x="323" y="98">e.g. 128</text><text x="613" y="98">e.g. 4096</text>
+    </g>
+  </svg>
+  <p>The VAE speaks in <b>C</b>. The main model speaks in <b>W</b>. The linear layer is the translator between them.</p>
+</section>
+
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const fmt = n => n.toLocaleString("en-US");
+
+  // ---------- seeded random numbers (deterministic per cell) ----------
+  function mulberry32(a) {
+    return function() {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function gaussians(seed, cellIdx, n) {
+    const r = mulberry32((seed * 1000003 + cellIdx * 7919) >>> 0);
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const u = Math.max(r(), 1e-9), v = r();
+      out.push(Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v));
+    }
+    return out;
+  }
+  const toByte = v => Math.max(0, Math.min(255, Math.round(255 * (0.5 + 0.22 * v))));
+  const cellColor = (seed, idx) => {
+    const g = gaussians(seed, idx, 3);
+    return `rgb(${toByte(g[0])},${toByte(g[1])},${toByte(g[2])})`;
+  };
+
+  // ---------- state ----------
+  const S = {};
+  function readState() {
+    S.imgW = +$("imgW").value; S.imgH = +$("imgH").value;
+    S.pixF = +$("vidF").value;
+    S.lf = (S.pixF - 1) / 8 + 1;               // latent frames
+    S.gw = S.imgW / 32; S.gh = S.imgH / 32;
+    S.C = +$("chC").value; S.W = +$("mdW").value;
+    S.seed = Math.max(0, Math.floor(+$("seed").value || 0));
+    S.N = S.lf * S.gh * S.gw;
+    S.sel = { r: 0, c: 0 };
+  }
+
+  // ---------- shape box ----------
+  function drawShapes() {
+    $("shapeBox").innerHTML =
+`Picture you asked for : ${S.imgW} x ${S.imgH} pixels, ${S.pixF} frame(s)
+Canvas (5-D)          : [1, <b>${S.C}</b>, <b>${S.lf}</b>, <b>${S.gh}</b>, <b>${S.gw}</b>]
+                         batch, channels, frames, height, width
+Tokens                : N = ${S.lf} x ${S.gh} x ${S.gw} = <b>${fmt(S.N)}</b>`;
+    $("shapeFlow").innerHTML =
+`canvas                 [1, ${S.C}, ${S.lf}, ${S.gh}, ${S.gw}]
+   flatten cells   -> [1, <b>${fmt(S.N)}</b>, ${S.C}]     ${fmt(S.N)} tokens, each a row of C = ${S.C} numbers
+   linear layer    -> [1, ${fmt(S.N)}, <b>${fmt(S.W)}</b>]   each row re-written at model width W = ${fmt(S.W)}
+   (learned table inside the layer: ${S.C} x ${fmt(S.W)} = ${fmt(S.C * S.W)} numbers)`;
+  }
+
+  // ---------- A1: pixel picture with 32px blocks ----------
+  function drawPix() {
+    const cv = $("pixCanvas"), ctx = cv.getContext("2d");
+    const scale = Math.min(480 / S.imgW, 320 / S.imgH);
+    cv.width = Math.round(S.imgW * scale); cv.height = Math.round(S.imgH * scale);
+    const g = ctx.createLinearGradient(0, 0, 0, cv.height);
+    g.addColorStop(0, "#f6a04d"); g.addColorStop(0.55, "#f2d6a2"); g.addColorStop(1, "#d9b97a");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = "#c0392b";
+    ctx.fillRect(cv.width * 0.3, cv.height * 0.55, cv.width * 0.4, cv.height * 0.13);
+    ctx.fillRect(cv.width * 0.38, cv.height * 0.47, cv.width * 0.22, cv.height * 0.09);
+    ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.lineWidth = 1;
+    const step = 32 * scale;
+    for (let x = 0; x <= cv.width + 1; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, cv.height); ctx.stroke(); }
+    for (let y = 0; y <= cv.height + 1; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cv.width, y); ctx.stroke(); }
+    $("pixNote").textContent =
+      `${S.imgW} / 32 = ${S.gw} columns and ${S.imgH} / 32 = ${S.gh} rows, so ${S.gw} x ${S.gh} = ${S.gw * S.gh} cells per frame. (A stand-in picture is drawn here; the real canvas starts with no picture at all.)`;
+  }
+
+  // ---------- A2: noise canvas ----------
+  const CELL = 22;
+  function drawNoise() {
+    const cv = $("noiseCanvas"), ctx = cv.getContext("2d");
+    cv.width = S.gw * CELL; cv.height = S.gh * CELL;
+    for (let r = 0; r < S.gh; r++)
+      for (let c = 0; c < S.gw; c++) {
+        ctx.fillStyle = cellColor(S.seed, r * S.gw + c);
+        ctx.fillRect(c * CELL, r * CELL, CELL, CELL);
+      }
+    ctx.strokeStyle = "rgba(255,255,255,.35)";
+    for (let c = 0; c <= S.gw; c++) { ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, cv.height); ctx.stroke(); }
+    for (let r = 0; r <= S.gh; r++) { ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(cv.width, r * CELL); ctx.stroke(); }
+    ctx.strokeStyle = "#e8590c"; ctx.lineWidth = 3;
+    ctx.strokeRect(S.sel.c * CELL + 1, S.sel.r * CELL + 1, CELL - 2, CELL - 2);
+    ctx.lineWidth = 1;
+    showCell();
+  }
+  function showCell() {
+    const idx = S.sel.r * S.gw + S.sel.c;
+    const v = gaussians(S.seed, idx, S.C);
+    const show = Math.min(8, S.C);
+    let head = "", vals = "";
+    for (let i = 0; i < show; i++) { head += `<th>ch ${i + 1}</th>`; vals += `<td>${v[i].toFixed(2)}</td>`; }
+    $("cellInfo").innerHTML =
+      `<p style="margin-top:0">Cell at row <b>${S.sel.r}</b>, column <b>${S.sel.c}</b> (frame 0)<br>
+       holds <b>${S.C}</b> random numbers. The first ${show}:</p>
+       <table class="vec"><tr>${head}<th>...</th><th>ch ${S.C}</th></tr>
+       <tr>${vals}<td>...</td><td>${v[S.C - 1].toFixed(2)}</td></tr></table>
+       <p class="note">Same seed, same numbers. Change the seed and the whole canvas changes.</p>`;
+  }
+  $("noiseCanvas").addEventListener("click", e => {
+    const cv = $("noiseCanvas"), rect = cv.getBoundingClientRect();
+    const sx = cv.width / rect.width, sy = cv.height / rect.height;
+    S.sel.c = Math.min(S.gw - 1, Math.floor((e.clientX - rect.left) * sx / CELL));
+    S.sel.r = Math.min(S.gh - 1, Math.floor((e.clientY - rect.top) * sy / CELL));
+    drawNoise(); drawTokTable();
+  });
+
+  // ---------- A3: stack of frames ----------
+  function drawStack() {
+    const cv = $("stackCanvas"), ctx = cv.getContext("2d");
+    cv.width = Math.min(760, document.querySelector("main").clientWidth - 60);
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    const n = Math.min(S.lf, 5), w = 130, h = Math.round(130 * S.gh / S.gw), off = 22;
+    for (let i = n - 1; i >= 0; i--) {
+      const x = 20 + i * off, y = 20 + (n - 1 - i) * 10;
+      ctx.fillStyle = `hsl(215,${40 + i * 6}%,${70 - i * 4}%)`;
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = "#345"; ctx.strokeRect(x, y, w, h);
+      ctx.fillStyle = "#123"; ctx.font = "11px system-ui";
+      ctx.fillText(`frame ${i}`, x + 6, y + 15);
+    }
+    const tx = 20 + n * off + w + 20;
+    ctx.fillStyle = getComputedStyle(document.body).color; ctx.font = "13px system-ui";
+    const lines = [
+      `${S.lf} sheet(s) of ${S.gh} x ${S.gw} cells` + (S.lf > n ? ` (first ${n} drawn)` : ""),
+      `each cell holds ${S.C} numbers`,
+      `batch = 1 canvas`
+    ];
+    lines.forEach((t, i) => ctx.fillText(t, tx, 50 + i * 22));
+  }
+
+  // ---------- B: flatten animation ----------
+  const TILE_G = 20, TILE_L = 9;
+  let flatState = "grid", tokEls = [];
+  function buildFlat() {
+    const stage = $("flat-stage");
+    stage.innerHTML = ""; tokEls = [];
+    const shown = S.gh * S.gw;                       // frame 0 only
+    stage.style.width = Math.max(S.gw * TILE_G, shown * (TILE_L + 1)) + "px";
+    stage.style.height = Math.max(S.gh * TILE_G, TILE_L + 10) + "px";
+    $("flat-wrap").style.height = (S.gh * TILE_G + 30) + "px";
+    for (let i = 0; i < shown; i++) {
+      const d = document.createElement("div");
+      d.className = "tok"; d.style.background = cellColor(S.seed, i);
+      d.title = `token ${i}  (row ${Math.floor(i / S.gw)}, col ${i % S.gw})`;
+      d.addEventListener("mouseenter", () => hover(i, true));
+      d.addEventListener("mouseleave", () => hover(i, false));
+      stage.appendChild(d); tokEls.push(d);
+    }
+    place(flatState);
+  }
+  function place(mode) {
+    flatState = mode;
+    tokEls.forEach((d, i) => {
+      if (mode === "grid") {
+        d.style.width = d.style.height = (TILE_G - 1) + "px";
+        d.style.left = (i % S.gw) * TILE_G + "px";
+        d.style.top = Math.floor(i / S.gw) * TILE_G + "px";
+      } else {
+        d.style.width = TILE_L + "px"; d.style.height = (TILE_L + 6) + "px";
+        d.style.left = i * (TILE_L + 1) + "px";
+        d.style.top = (S.gh * TILE_G / 2 - 6) + "px";
+      }
+    });
+    $("flat-wrap").scrollLeft = 0;
+  }
+  function hover(i, on) {
+    tokEls[i].classList.toggle("hl", on);
+    $("flatNote").textContent = on
+      ? `Token ${i} = row ${Math.floor(i / S.gw)} x ${S.gw} + column ${i % S.gw}`
+        + `  (${Math.floor(i / S.gw)} x ${S.gw} + ${i % S.gw} = ${i}). It will be row ${i} of the table.`
+      : "Hover a cell to see its position in the list. Token number = row x width + column (for the first frame).";
+  }
+  $("flatBtn").onclick = () => place("list");
+  $("unflatBtn").onclick = () => place("grid");
+
+  // ---------- B2: token table ----------
+  function drawTokTable() {
+    const idx = S.sel.r * S.gw + S.sel.c;
+    const rows = [0, 1, 2, idx, S.N - 1];
+    const uniq = [...new Set(rows)].sort((a, b) => a - b);
+    const cols = Math.min(4, S.C);
+    let h = `<table class="vec"><tr><th></th>`;
+    for (let i = 0; i < cols; i++) h += `<th>c${i + 1}</th>`;
+    h += `<th>...</th><th>c${S.C}</th></tr>`;
+    uniq.forEach((t, k) => {
+      if (k > 0 && t - uniq[k - 1] > 1) h += `<tr><td colspan="${cols + 3}" style="text-align:center">...</td></tr>`;
+      const v = t < S.gh * S.gw ? gaussians(S.seed, t, S.C) : gaussians(S.seed, t, S.C);
+      const mark = t === idx ? " style='background:var(--code)'" : "";
+      h += `<tr${mark}><th>token ${t}</th>`;
+      for (let i = 0; i < cols; i++) h += `<td>${v[i].toFixed(2)}</td>`;
+      h += `<td>...</td><td>${v[S.C - 1].toFixed(2)}</td></tr>`;
+    });
+    h += `</table><p class="note">Shape: ${fmt(S.N)} rows x ${S.C} columns. The highlighted row is the cell you clicked in Step A (token ${idx}).</p>`;
+    $("tokTable").innerHTML = h;
+  }
+
+  // ---------- B3: projection picture ----------
+  function drawProj() {
+    const maxPx = 560;
+    const wC = Math.max(20, Math.round(maxPx * S.C / 4096 * 4));          // visual scale only
+    const wW = Math.max(wC + 20, Math.round(maxPx * S.W / 4096));
+    $("projBox").innerHTML =
+      `<div class="legend"><span>One token, before: <b>${S.C}</b> numbers</span>
+         <span>after the linear layer: <b>${fmt(S.W)}</b> numbers</span></div>
+       <div class="bar" style="width:${Math.min(wC, maxPx)}px;background:var(--accent)"></div>
+       <div style="margin:2px 0 2px 12px;color:var(--muted)">&darr; multiply by the learned ${S.C} &times; ${fmt(S.W)} table</div>
+       <div class="bar" style="width:${Math.min(wW, maxPx)}px;background:var(--accent2)"></div>
+       <p class="note">Bar lengths are drawn to a rough scale only.</p>`;
+  }
+
+  // ---------- wiring ----------
+  function renderAll() {
+    readState(); drawShapes(); drawPix(); drawNoise(); drawStack();
+    buildFlat(); drawTokTable(); drawProj();
+  }
+  ["imgW", "imgH", "vidF", "chC", "mdW", "seed"].forEach(id => $(id).addEventListener("change", renderAll));
+  $("seed").addEventListener("input", renderAll);
+  window.addEventListener("resize", drawStack);
+  renderAll();
+})();
+</script>
+</body>
+</html>
