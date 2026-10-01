@@ -241,6 +241,69 @@ out 4 = 0.9*0.0  + 0.3*0.4 + 0.8*-1.0 =  0.00 + 0.12 - 0.80 = -0.68</div>
   <p>The VAE speaks in <b>C</b>. The main model speaks in <b>W</b>. The linear layer is the translator between them.</p>
 </section>
 
+<!-- ===================== C -> W for all image tokens ===================== -->
+<section>
+  <span class="step">STEP B, IN DETAIL</span>
+  <h2>How the image tokens go from C to W</h2>
+
+  <h3>1. Why bother? Room to work</h3>
+  <p>Storing a cell needs only a few numbers: just enough to rebuild its pixels. Doing the model's work on that cell needs more room. While the model thinks, each token has to hold things like <i>"what am I"</i>, <i>"what is around me"</i> and <i>"which words of the prompt matter to me"</i>. A bigger row gives it space for all of that.</p>
+  <p>Think of C as a short note and W as a full page. You can copy a note onto a page, but the page is where you do the working.</p>
+
+  <h3>2. One table, applied to every token</h3>
+  <p>All N tokens sit in a table of N rows and C columns. We multiply the whole table by one learned table of C rows and W columns. The result is a table of N rows and W columns.</p>
+
+  <svg viewBox="0 0 720 230" style="max-width:720px;width:100%;display:block;margin:8px 0" role="img" aria-label="N by C table times C by W table gives N by W table">
+    <g font-family="system-ui" font-size="13" fill="currentColor" text-anchor="middle">
+      <!-- left: tokens N x C -->
+      <rect x="20" y="40" width="90" height="150" rx="4" fill="var(--accent)" fill-opacity=".25" stroke="var(--accent)"/>
+      <rect x="20" y="95" width="90" height="16" fill="var(--accent2)" fill-opacity=".6"/>
+      <text x="65" y="25">image tokens</text>
+      <text x="65" y="210">N rows x C cols</text>
+      <text x="65" y="108" font-size="11">one token</text>
+      <text x="145" y="120" font-size="26">x</text>
+      <!-- middle: weights C x W -->
+      <rect x="180" y="75" width="230" height="80" rx="4" fill="var(--code)" stroke="currentColor" stroke-opacity=".5"/>
+      <text x="295" y="60">the learned table (same for every token)</text>
+      <text x="295" y="125" font-size="13">C rows x W columns</text>
+      <text x="295" y="210">weights, learned in training</text>
+      <text x="440" y="120" font-size="26">=</text>
+      <!-- right: output N x W -->
+      <rect x="470" y="40" width="230" height="150" rx="4" fill="var(--accent2)" fill-opacity=".2" stroke="var(--accent2)"/>
+      <rect x="470" y="95" width="230" height="16" fill="var(--accent2)" fill-opacity=".6"/>
+      <text x="585" y="25">tokens at the model's width</text>
+      <text x="585" y="210">N rows x W cols</text>
+      <text x="585" y="108" font-size="11">same token, now W numbers</text>
+    </g>
+  </svg>
+  <p>The highlighted row is one token before and after. Row 95 of the left table (a row of C numbers) becomes row 95 of the right table (a row of W numbers). Nothing is reordered and no token is added or removed.</p>
+
+  <div class="shape">before : [N, C]    e.g. [384, 128]    384 tokens, each a row of 128 numbers
+table  : [C, W]    e.g. [128, 4096]   the same 524,288 learned numbers for all tokens
+after  : [N, W]    e.g. [384, 4096]   384 tokens, each a row of 4096 numbers</div>
+
+  <h3>3. Common misunderstandings</h3>
+  <div class="callout">
+    <p style="margin-top:0"><b>"W is the neural network."</b> Not quite. W is the <i>width of the row</i> the network works on. The network is the many layers and all their weights. This C &rarr; W table is only the first layer.</p>
+    <p><b>"The new space holds new information."</b> Not yet. Right after this layer, the W numbers are just blends of the C numbers. Think of re-writing a 128-word note on a 4096-line page: the page is bigger but the note hasn't grown. The later layers are what fill the extra room, by mixing in information from neighbouring cells and from the prompt.</p>
+    <p style="margin-bottom:0"><b>"Each cell has its own table."</b> No. One table, shared by every token. That is why the model works for any picture size: add more cells and you just add more rows.</p>
+  </div>
+
+  <h3>4. What does bigger W cost?</h3>
+  <ul>
+    <li><b>More room to think</b>, so usually better results.</li>
+    <li><b>More memory and compute.</b> The model's weight tables grow roughly with W &times; W, so doubling W makes them about four times bigger.</li>
+  </ul>
+  <p>Model designers pick W as a balance between quality and cost, which is one reason models come in sizes like 12B or 22B.</p>
+
+  <h3>5. Where does the prompt land?</h3>
+  <p>The text grid from the first article has its own row length, D, which comes from the text model. It is also converted to the model's working width, W, using its own learned tables. Once both the image tokens and the text tokens are rows of the same length W, the model can compare them. That comparison is the subject of the next part.</p>
+  <div class="shape">image tokens : [N, C] -> [N, W]
+text tokens  : [T, D] -> [T, W]     <- both now at the same working width
+next step    : compare each image token with each text token</div>
+  <p class="note">Numbers (128, 4096, 524,288) are illustrative, as before.</p>
+</section>
+
 </main>
 
 <script>
