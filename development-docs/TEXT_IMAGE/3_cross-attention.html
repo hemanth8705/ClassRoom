@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cross-Attention: Where the Prompt Meets the Picture</title>
+<style>
+  :root {
+    --bg: #fafaf7; --card: #ffffff; --ink: #1d1d1b; --muted: #666660; --line: #dcdcd4;
+    --accent: #2f6fed; --accent2: #e8590c; --code: #f1f1ea; --good: #2b8a3e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #16161a; --card: #1f1f25; --ink: #ecece6; --muted: #a0a09a; --line: #34343c;
+            --accent: #6c9bff; --accent2: #ff9a57; --code: #2a2a32; --good: #69db7c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 24px 16px 80px; }
+  h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 6px; }
+  h2 { font-size: 1.3rem; margin: 0 0 8px; }
+  h3 { font-size: 1.05rem; margin: 18px 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+            padding: 20px; margin: 20px 0; }
+  .step { display: inline-block; background: var(--accent); color: #fff; border-radius: 999px;
+          font-size: .78rem; font-weight: 600; padding: 2px 10px; margin-bottom: 6px; }
+  code, .mono { font-family: ui-monospace, Consolas, monospace; background: var(--code);
+                padding: 1px 6px; border-radius: 4px; font-size: .92em; }
+  .shape { font-family: ui-monospace, Consolas, monospace; background: var(--code);
+           border-radius: 8px; padding: 10px 14px; margin: 10px 0; overflow-x: auto; white-space: pre; font-size: .9rem; }
+  .callout { border-left: 4px solid var(--accent2); background: var(--code); padding: 10px 14px;
+             border-radius: 0 8px 8px 0; margin: 14px 0; }
+  .callout.blue { border-left-color: var(--accent); }
+  .note { color: var(--muted); font-size: .88rem; }
+  .row { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .grow { flex: 1; min-width: 280px; }
+  .scroll { overflow-x: auto; }
+  table.vec { border-collapse: collapse; font-family: ui-monospace, Consolas, monospace; font-size: .82rem; margin: 4px 0; }
+  table.vec td, table.vec th { border: 1px solid var(--line); padding: 3px 8px; text-align: right; white-space: nowrap; }
+  table.vec th { background: var(--code); font-weight: 600; }
+  table.vec th.l { text-align: left; }
+  table.vec tr.sel td, table.vec tr.sel th { outline: 2px solid var(--accent2); outline-offset: -2px; }
+  table.vec tr.clk { cursor: pointer; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; align-items: center; }
+  .chip { font: inherit; font-size: .9rem; background: var(--code); color: var(--ink); border: 1px solid var(--line);
+          border-radius: 999px; padding: 4px 14px; cursor: pointer; }
+  .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .chiplabel { font-size: .85rem; color: var(--muted); }
+  button.btn { font: inherit; background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 6px 14px; cursor: pointer; }
+  button.btn.alt { background: var(--code); color: var(--ink); border: 1px solid var(--line); }
+  button.btn:disabled { opacity: .4; cursor: default; }
+  .tgrid { display: grid; grid-template-columns: repeat(4, 62px); gap: 3px; margin: 6px 0; }
+  .tcell { height: 52px; border-radius: 6px; border: 2px solid transparent; font-size: .72rem; line-height: 1.15;
+           display: flex; flex-direction: column; align-items: center; justify-content: center; color: #111;
+           font-family: ui-monospace, Consolas, monospace; cursor: default; padding: 0; background-clip: padding-box; }
+  .tgrid.clickable .tcell { cursor: pointer; }
+  .tcell.sel { border-color: var(--accent2); box-shadow: 0 0 0 2px var(--accent2); }
+  .tcell b { font-size: .8rem; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 12px 0; background: var(--bg); }
+  .card.dim { opacity: .25; }
+  .card h3 { margin-top: 0; }
+  .eq { font-family: ui-monospace, Consolas, monospace; font-size: .85rem; line-height: 1.7; overflow-x: auto; white-space: pre; }
+  .bar { height: 14px; border-radius: 3px; display: inline-block; vertical-align: middle; }
+  .barrow { display: flex; align-items: center; gap: 8px; font-family: ui-monospace, Consolas, monospace; font-size: .82rem; margin: 3px 0; }
+  .barrow .lab { width: 64px; flex: none; }
+  .barrow .val { width: 140px; flex: none; }
+  .barrow .track { flex: 1; min-width: 80px; background: var(--code); border-radius: 3px; height: 14px; position: relative; }
+  .sliders { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; margin: 8px 0; }
+  .sliders label { font-size: .85rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .sliders input[type=range] { width: 150px; }
+  svg text { font-family: system-ui, sans-serif; }
+  ol.steps { padding-left: 1.3em; }
+  ol.steps li { margin: 6px 0; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Cross-Attention: Where the Prompt Meets the Picture</h1>
+<p class="sub">We have two lists of rows: one for the prompt, one for the canvas. This page shows what happens when they meet. Everything is computed live from tiny, hand-made numbers, so you can follow every multiplication.</p>
+
+<!-- ============ 1. INPUTS ============ -->
+<section id="s-inputs">
+  <span class="step">INPUTS</span>
+  <h2>What goes in</h2>
+  <p>Three tables arrive at this step. (Colours: blue = positive number, orange = negative, stronger colour = bigger number.)</p>
+
+  <h3>1. Positive word grid</h3>
+  <p>The prompt <b>"red car beach sunset"</b>, already turned into numbers by the text model. One row per token, <code>D</code> numbers per row.</p>
+  <div class="scroll" id="in-pos"></div>
+
+  <h3>2. Negative word grid</h3>
+  <p>The negative prompt <b>"blurry low quality"</b>, turned into numbers the same way. It goes through exactly the same machinery in its own separate run, so this page lets you switch between the two grids later.</p>
+  <div class="scroll" id="in-neg"></div>
+
+  <h3>3. Image tokens</h3>
+  <p>The canvas, flattened into a list of rows (previous page). Here we use a tiny canvas of <b>4 columns &times; 3 rows = 12 cells</b>, so <code>N = 12</code> tokens, each a row of <code>W = 4</code> numbers.</p>
+  <div class="row">
+    <div>
+      <div class="tgrid" id="in-grid"></div>
+      <p class="note" style="max-width:270px">Cell colours are only a hint of what each cell is turning into. Midway through generation a cell already carries a rough idea of its content; we made these hints by hand.</p>
+    </div>
+    <div class="scroll grow" id="in-img"></div>
+  </div>
+
+  <div class="callout blue">
+    <b>Toy sizes.</b> A real model has hundreds to thousands of tokens and rows thousands of numbers wide. We use <code>D = 6</code>, <code>W = 4</code>, <code>N = 12</code>, <code>T = 4</code> so you can see every number. The mechanism is identical.
+  </div>
+</section>
+
+<!-- ============ 2. STEP 0: expand text ============ -->
+<section id="s-expand">
+  <span class="step">STEP 0</span>
+  <h2>First, give the text the same width as the image</h2>
+  <p>The image rows are <code>W = 4</code> numbers wide, the text rows are <code>D = 6</code> wide. Rows can only be compared if they have the same length, so the text goes through one learned table of size <code>D &times; W</code>, exactly like the <code>C &rarr; W</code> table on the previous page.</p>
+
+  <div class="chips" id="grid-toggle-1"></div>
+  <div class="row">
+    <div>
+      <b>Learned table <code>D &times; W</code> (6 &times; 4)</b>
+      <div class="scroll" id="ex-pt"></div>
+    </div>
+    <div class="grow">
+      <div class="chips" id="ex-words"></div>
+      <div id="ex-calc"></div>
+    </div>
+  </div>
+  <b>Result for the whole grid</b>
+  <div class="shape" id="ex-shape"></div>
+  <div class="scroll" id="ex-out"></div>
+  <p class="note">The same table is used for every token, just like the image side. The text now has shape <code>[T, W]</code>, the image has <code>[N, W]</code>. Same row length.</p>
+</section>
+
+<!-- ============ 3. Q K V ============ -->
+<section id="s-qkv">
+  <span class="step">Q, K, V</span>
+  <h2>Where Q, K and V fit in</h2>
+  <p>Comparing rows takes two small ideas. First, each side makes a short <b>label row</b> to be matched, and the text also makes a <b>content row</b> to be handed over. Three more learned tables do this:</p>
+
+  <svg viewBox="0 0 760 250" style="max-width:760px;width:100%;display:block;margin:6px 0 10px" role="img" aria-label="Image tokens become Q; text tokens become K and V">
+    <defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+    <g font-size="13" fill="currentColor" text-anchor="middle">
+      <rect x="10"  y="15"  width="150" height="52" rx="8" fill="var(--accent)" fill-opacity=".2" stroke="var(--accent)"/>
+      <text x="85" y="38">image tokens</text><text x="85" y="56" font-size="11">[N, W]</text>
+      <rect x="10"  y="99"  width="150" height="52" rx="8" fill="var(--accent2)" fill-opacity=".2" stroke="var(--accent2)"/>
+      <text x="85" y="122">text tokens</text><text x="85" y="140" font-size="11">[T, W]</text>
+      <rect x="10"  y="183" width="150" height="52" rx="8" fill="var(--accent2)" fill-opacity=".2" stroke="var(--accent2)"/>
+      <text x="85" y="206">text tokens</text><text x="85" y="224" font-size="11">[T, W]  (same ones)</text>
+      <g stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)">
+        <line x1="162" y1="41" x2="230" y2="41"/><line x1="162" y1="125" x2="230" y2="125"/><line x1="162" y1="209" x2="230" y2="209"/>
+      </g>
+      <g fill="var(--code)" stroke="currentColor" stroke-opacity=".5">
+        <rect x="232" y="15" width="130" height="52" rx="8"/><rect x="232" y="99" width="130" height="52" rx="8"/><rect x="232" y="183" width="130" height="52" rx="8"/>
+      </g>
+      <text x="297" y="38">&times; table W<tspan font-weight="700">q</tspan></text><text x="297" y="56" font-size="11">[W, d]  learned</text>
+      <text x="297" y="122">&times; table W<tspan font-weight="700">k</tspan></text><text x="297" y="140" font-size="11">[W, d]  learned</text>
+      <text x="297" y="206">&times; table W<tspan font-weight="700">v</tspan></text><text x="297" y="224" font-size="11">[W, d]  learned</text>
+      <g stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)">
+        <line x1="364" y1="41" x2="432" y2="41"/><line x1="364" y1="125" x2="432" y2="125"/><line x1="364" y1="209" x2="432" y2="209"/>
+      </g>
+      <rect x="434" y="15" width="150" height="52" rx="8" fill="var(--accent)" fill-opacity=".35" stroke="var(--accent)"/>
+      <text x="509" y="38" font-weight="700">Q  [N, d]</text><text x="509" y="56" font-size="11">"what am I looking for?"</text>
+      <rect x="434" y="99" width="150" height="52" rx="8" fill="var(--accent2)" fill-opacity=".35" stroke="var(--accent2)"/>
+      <text x="509" y="122" font-weight="700">K  [T, d]</text><text x="509" y="140" font-size="11">"what do I offer?"</text>
+      <rect x="434" y="183" width="150" height="52" rx="8" fill="var(--accent2)" fill-opacity=".35" stroke="var(--accent2)"/>
+      <text x="509" y="206" font-weight="700">V  [T, d]</text><text x="509" y="224" font-size="11">"what I hand over"</text>
+      <g stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)">
+        <path d="M586 41 L650 41 L650 80" fill="none"/><path d="M586 125 L650 125 L650 100" fill="none"/>
+        <path d="M586 209 L690 209 L690 150" fill="none"/>
+      </g>
+      <rect x="620" y="82" width="130" height="68" rx="8" fill="var(--code)" stroke="currentColor" stroke-opacity=".5"/>
+      <text x="685" y="106">Q&middot;K &rarr; weights</text><text x="685" y="124">weights &times; V</text><text x="685" y="141" font-size="11">the four steps below</text>
+    </g>
+  </svg>
+
+  <ul>
+    <li><b>Q (query)</b> comes from the <b>image</b> cell. It is that cell's question: "which kind of word do I need?"</li>
+    <li><b>K (key)</b> comes from the <b>text</b> token. It is the label the word shows off, so questions can be matched against it.</li>
+    <li><b>V (value)</b> comes from the same text token. It is the <b>content</b> that gets copied into the cell if the cell picks that word.</li>
+    <li>Q and K must have the <b>same length</b> <code>d</code> so they can be compared. Here <code>d = 2</code>, small enough to draw on a flat sheet of paper (below). Real models use something like 64 to 128.</li>
+    <li>Why a separate K and V for the same word? A word can be easy to find (K) without handing over the same thing it is found by (V). Having two separate tables lets the model learn each job on its own.</li>
+  </ul>
+
+  <div class="chips" id="grid-toggle-2"></div>
+  <div class="row">
+    <div><b>W<sub>q</sub></b> <span class="note">[W, d]</span><div id="m-wq"></div></div>
+    <div><b>W<sub>k</sub></b> <span class="note">[W, d]</span><div id="m-wk"></div></div>
+    <div><b>W<sub>v</sub></b> <span class="note">[W, d]</span><div id="m-wv"></div></div>
+  </div>
+  <div class="row">
+    <div><b>Q</b> <span class="note">= image tokens &times; W<sub>q</sub>, shape [12, 2]</span><div class="scroll" id="m-q"></div></div>
+    <div><b>K</b> <span class="note">= text tokens &times; W<sub>k</sub></span><div id="m-k"></div></div>
+    <div><b>V</b> <span class="note">= text tokens &times; W<sub>v</sub></span><div id="m-v"></div></div>
+  </div>
+  <p class="note">These three tables are made up for the demo; in a real model they are learned during training.</p>
+</section>
+
+<!-- ============ 4. FOUR STEPS ============ -->
+<section id="s-four">
+  <span class="step">THE FOUR STEPS</span>
+  <h2>The recipe</h2>
+  <ol class="steps">
+    <li><b>Scores.</b> Compare each cell's Q with every word's K. A big number means a good match. <code>[N, d] &times; [d, T] &rarr; [N, T]</code></li>
+    <li><b>Softmax.</b> Turn each cell's scores into percentages that add up to 100%. <code>[N, T] &rarr; [N, T]</code></li>
+    <li><b>Mix.</b> Each cell takes that percentage of every word's V and adds them up. <code>[N, T] &times; [T, d] &rarr; [N, d]</code></li>
+    <li><b>Update.</b> Widen the mix back to <code>W</code> numbers with one more learned table, and add it to the cell's own row. <code>[N, d] &times; [d, W] &rarr; [N, W]</code></li>
+  </ol>
+  <p>The next section runs all four on a single cell. Then the whole attention table shows every cell at once.</p>
+</section>
+
+<!-- ============ 5. WORKED EXAMPLE ============ -->
+<section id="s-work">
+  <span class="step">WORKED EXAMPLE</span>
+  <h2>Run it on one cell</h2>
+
+  <div class="chips" id="grid-toggle-3"></div>
+  <div class="row">
+    <div>
+      <b>Pick a cell</b> <span class="note">(click)</span>
+      <div class="chips" id="canvas-mode"></div>
+      <div class="tgrid clickable" id="work-grid"></div>
+      <div class="chips">
+        <button class="btn" id="b-walk">Walk me through</button>
+        <button class="btn alt" id="b-prev">&larr; Back</button>
+        <button class="btn alt" id="b-next">Next &rarr;</button>
+        <button class="btn alt" id="b-all">Show all</button>
+      </div>
+      <div class="chips"><label class="chiplabel"><input type="checkbox" id="scaleBox"> divide scores by &radic;d (real models do)</label></div>
+    </div>
+    <div class="grow" id="work-intro"></div>
+  </div>
+
+  <div class="sliders" id="work-sliders">
+    <b style="font-size:.9rem">Edit the cell's question:</b>
+    <label>q1 <input type="range" id="q1" min="-2.5" max="2.5" step="0.05"> <span class="mono" id="q1v"></span></label>
+    <label>q2 <input type="range" id="q2" min="-2.5" max="2.5" step="0.05"> <span class="mono" id="q2v"></span></label>
+    <button class="btn alt" id="b-qreset">Reset to this cell's Q</button>
+  </div>
+
+  <div class="card" id="c1"><h3>Step 1: Scores = Q &middot; K</h3><div class="row"><div class="grow" id="c1-body"></div><div id="c1-plot"></div></div></div>
+  <div class="card" id="c2"><h3>Step 2: Softmax, scores to percentages</h3><div id="c2-body"></div></div>
+  <div class="card" id="c3"><h3>Step 3: Mix the values</h3><div id="c3-body"></div></div>
+  <div class="card" id="c4"><h3>Step 4: Update the cell</h3><div id="c4-body"></div></div>
+</section>
+
+<!-- ============ 6. ALL CELLS ============ -->
+<section id="s-all">
+  <span class="step">ALL CELLS AT ONCE</span>
+  <h2>The whole attention table</h2>
+  <p>The same four steps run for every cell at the same time. That is just one matrix multiplication. The result is a table of <code>N</code> rows (cells) &times; <code>T</code> columns (words) of percentages. Click a row to select that cell above.</p>
+  <div class="chips" id="grid-toggle-4"></div>
+  <div class="scroll" id="all-table"></div>
+  <p class="note">Rows add up to 100%. Change the text grid or the &radic;d box above to see them change. Top-row cells lean toward "sunset", middle cells toward "car", bottom cells toward "beach", because we gave their Q's those directions.</p>
+</section>
+
+<!-- ============ 7. RECAP ============ -->
+<section id="s-recap">
+  <span class="step">RECAP</span>
+  <h2>What just happened</h2>
+  <div class="shape">image tokens  X   [N, W]
+text tokens   Tw  [T, W]        (after step 0)
+
+Q = X  x Wq   [N, d]            what each cell asks
+K = Tw x Wk   [T, d]            what each word offers
+V = Tw x Wv   [T, d]            what each word hands over
+
+scores  = Q x K^T          [N, T]
+weights = softmax(scores)  [N, T]    each row adds to 100%
+mixed   = weights x V      [N, d]
+X_new   = X + mixed x Wo   [N, W]    same shape as the input</div>
+  <ul>
+    <li>The prompt is never pasted onto the picture. Every cell <b>chooses how much of each word to take</b>.</li>
+    <li>Only the <b>image</b> rows change. The text rows stay as they are.</li>
+    <li>The output has the same shape as the input, so another layer can follow, and another. The model repeats this inside every layer, and the whole stack is run again at every denoising step. The prompt grid is the same each time, but the cells have changed, so the percentages change too.</li>
+  </ul>
+  <div class="callout">
+    <b>What this page simplifies.</b>
+    Real models split <code>d</code> across several parallel <b>heads</b> (each head has its own Wq, Wk, Wv and can attend to something different, like colour or place). They also add self-attention (cells looking at each other) and a per-token network next to this step. We also made up all the numbers, and a real model's attention is far less tidy. We have not checked LTX's exact layer layout, so treat this as the general idea.
+  </div>
+</section>
+
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+
+  // ---------- tiny math helpers ----------
+  const mm = (A, B) => A.map(r => B[0].map((_, j) => r.reduce((s, v, k) => s + v * B[k][j], 0)));
+  const dot = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0);
+  const softmax = r => { const m = Math.max(...r), e = r.map(v => Math.exp(v - m)), s = e.reduce((a, b) => a + b); return e.map(v => v / s); };
+  const f2 = v => (Object.is(v, -0) || Math.abs(v) < 0.005 ? 0 : v).toFixed(2);
+
+  // ---------- the made-up data ----------
+  const WORDS = { pos: ["red", "car", "beach", "sunset"], neg: ["blurry", "low", "quality"] };
+  const E = {
+    pos: [[0.9,0.1,0.0,0.2,0.5,0.0],[0.1,0.9,0.0,0.1,0.0,0.6],[0.0,0.1,0.9,0.0,0.3,0.2],[0.2,0.0,0.1,0.9,0.6,0.0]],
+    neg: [[0.5,0.0,0.1,0.0,0.9,0.3],[0.0,0.4,0.0,0.1,0.8,0.5],[0.1,0.3,0.2,0.0,0.7,0.9]]
+  };
+  const Pt = [[0.3,0.6,0.1,0.0],[0.1,1.3,0.2,0.2],[-0.9,0.1,0.2,0.1],[1.0,0.0,0.1,0.3],[0.2,0.1,-0.2,0.5],[0.0,0.4,0.1,-0.3]];
+  const Wq = [[1.2,0.1],[0.1,1.2],[0.3,-0.2],[-0.2,0.3]];
+  const Wk = Wq.map(r => r.slice());
+  const Wv = [[0.8,0.1],[0.1,0.9],[0.3,0.2],[0.0,0.4]];
+  const Wo = [[0.6,0.1,0.0,0.1],[0.0,0.6,0.1,0.0]];
+  const GW = 4, GH = 3, N = GW * GH;
+  const X = [];
+  {
+    const rows = [[[1,0.1],[1,0.1],[1.2,0.0],[1,0.1]], [[-0.3,0.4],[0,1],[0,1],[-0.3,0.4]], [[-1,0.1],[-1,0.1],[-1,0.1],[-1,0.1]]];
+    for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) { const [a, b] = rows[r][c]; X.push([a, b, 0.1 * (c + 1), 0.1 * (r + 1)]); }
+  }
+  const Qall = mm(X, Wq);
+  const WORDCOL = { pos: ["#e03131", "#2f6fed", "#c58b1a", "#9c36b5"], neg: ["#7a7a7a", "#2b8a3e", "#0b7285"] };
+
+  // ---------- state ----------
+  const S = { grid: "pos", cell: 5, word: 0, col: 0, qo: null, scale: false, step: 0, mode: -1 };
+  const cur = () => {
+    const Tw = mm(E[S.grid], Pt), K = mm(Tw, Wk), V = mm(Tw, Wv);
+    const q = S.qo || Qall[S.cell];
+    const sc = S.scale ? 1 / Math.sqrt(2) : 1;
+    const scores = K.map(k => dot(q, k) * sc);
+    const w = softmax(scores);
+    const y = [0, 1].map(j => w.reduce((s, wi, i) => s + wi * V[i][j], 0));
+    const delta = Wo[0].map((_, j) => y[0] * Wo[0][j] + y[1] * Wo[1][j]);
+    return { Tw, K, V, q, sc, scores, w, y, delta, words: WORDS[S.grid], cols: WORDCOL[S.grid] };
+  };
+  const allWeights = () => {
+    const { K } = cur(), sc = S.scale ? 1 / Math.sqrt(2) : 1;
+    return Qall.map(q => softmax(K.map(k => dot(q, k) * sc)));
+  };
+
+  // ---------- rendering helpers ----------
+  const heat = (v, max = 1.5) => { const a = Math.min(1, Math.abs(v) / max) * 0.6; return v >= 0 ? `rgba(47,111,237,${a})` : `rgba(232,89,12,${a})`; };
+  function table(colHeads, rowHeads, M, o = {}) {
+    let h = `<table class="vec"><tr><th></th>${colHeads.map(c => `<th>${c}</th>`).join("")}</tr>`;
+    M.forEach((r, i) => {
+      const cls = [o.sel === i ? "sel" : "", o.click ? "clk" : ""].join(" ");
+      h += `<tr class="${cls}" ${o.click ? `data-i="${i}"` : ""}><th class="l">${rowHeads[i]}</th>` +
+        r.map(v => o.pct ? `<td style="background:rgba(47,111,237,${0.08 + v * 0.7})">${Math.round(v * 100)}%</td>`
+                         : `<td style="background:${heat(v, o.max || 1.5)}">${f2(v)}</td>`).join("") + `</tr>`;
+    });
+    return h + `</table>`;
+  }
+  const hdr = (n, p = "") => Array.from({ length: n }, (_, i) => `${p}${i + 1}`);
+  function cellColor(x) {
+    const a = x[0], b = x[1];
+    const ws = [Math.max(a, 0), Math.max(-a, 0), Math.max(b - 0.4, 0), 0.12];
+    const cols = [[246,160,77],[217,185,122],[192,57,43],[205,205,205]];
+    const tot = ws.reduce((s, v) => s + v, 0);
+    const c = [0, 1, 2].map(k => Math.round(ws.reduce((s, w, i) => s + w * cols[i][k], 0) / tot));
+    return `rgb(${c})`;
+  }
+  const cellLabel = i => `${Math.floor(i / GW)},${i % GW}`;
+
+  // ---------- section 1: inputs ----------
+  function renderInputs() {
+    $("in-pos").innerHTML = table(hdr(6, "d"), WORDS.pos, E.pos) + `<div class="note">shape [T, D] = [4, 6]</div>`;
+    $("in-neg").innerHTML = table(hdr(6, "d"), WORDS.neg, E.neg) + `<div class="note">shape [T, D] = [3, 6]</div>`;
+    $("in-img").innerHTML = table(hdr(4, "w"), X.map((_, i) => `cell ${i} (${cellLabel(i)})`), X) +
+      `<div class="note">shape [N, W] = [12, 4]. Cell labels are (row, column).</div>`;
+    $("in-grid").innerHTML = X.map((x, i) => `<div class="tcell" style="background:${cellColor(x)}"><b>${i}</b>${cellLabel(i)}</div>`).join("");
+  }
+
+  // ---------- grid toggles (shared) ----------
+  function renderToggles() {
+    ["1", "2", "3", "4"].forEach(k => {
+      $("grid-toggle-" + k).innerHTML = `<span class="chiplabel">Text grid:</span>` +
+        ["pos", "neg"].map(g => `<button class="chip ${S.grid === g ? "on" : ""}" data-g="${g}">${g === "pos" ? "Positive: red car beach sunset" : "Negative: blurry low quality"}</button>`).join("");
+    });
+    document.querySelectorAll("[data-g]").forEach(b => b.onclick = () => { S.grid = b.dataset.g; S.word = 0; S.mode = -1; refresh(); });
+  }
+
+  // ---------- section 2: expand ----------
+  function renderExpand() {
+    const c = cur(), E_ = E[S.grid];
+    $("ex-pt").innerHTML = table(hdr(4, "w"), hdr(6, "d"), Pt);
+    $("ex-words").innerHTML = `<span class="chiplabel">Word:</span>` +
+      c.words.map((w, i) => `<button class="chip ${S.word === i ? "on" : ""}" data-w="${i}">${w}</button>`).join("") +
+      `<span class="chiplabel" style="margin-left:10px">Output number:</span>` +
+      [0,1,2,3].map(j => `<button class="chip ${S.col === j ? "on" : ""}" data-c="${j}">${j + 1}</button>`).join("");
+    document.querySelectorAll("[data-w]").forEach(b => b.onclick = () => { S.word = +b.dataset.w; renderExpand(); });
+    document.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { S.col = +b.dataset.c; renderExpand(); });
+    const row = E_[S.word], j = S.col;
+    const terms = row.map((v, k) => `${f2(v)}&times;${f2(Pt[k][j])}`).join(" + ");
+    $("ex-calc").innerHTML = `<div class="eq">"${c.words[S.word]}" (D=6): [${row.map(f2).join(", ")}]
+output ${j + 1} = ${terms}
+         = <b>${f2(c.Tw[S.word][j])}</b>
+
+all 4 outputs: [${c.Tw[S.word].map(f2).join(", ")}]   (W=4)</div>`;
+    $("ex-shape").textContent = `before: [T, D] = [${E_.length}, 6]      table: [D, W] = [6, 4]      after: [T, W] = [${E_.length}, 4]`;
+    $("ex-out").innerHTML = table(hdr(4, "w"), c.words, c.Tw);
+  }
+
+  // ---------- section 3: Q K V tables ----------
+  function renderQKV() {
+    const c = cur();
+    $("m-wq").innerHTML = table(["q1", "q2"], hdr(4, "w"), Wq);
+    $("m-wk").innerHTML = table(["k1", "k2"], hdr(4, "w"), Wk);
+    $("m-wv").innerHTML = table(["v1", "v2"], hdr(4, "w"), Wv);
+    $("m-q").innerHTML = table(["q1", "q2"], X.map((_, i) => `cell ${i}`), Qall, { sel: S.cell });
+    $("m-k").innerHTML = table(["k1", "k2"], c.words, c.K);
+    $("m-v").innerHTML = table(["v1", "v2"], c.words, c.V);
+  }
+
+  // ---------- section 5: worked example ----------
+  function renderCanvasModeChips() {
+    const words = WORDS[S.grid];
+    $("canvas-mode").innerHTML = `<span class="chiplabel">Show:</span>` +
+      `<button class="chip ${S.mode === -1 ? "on" : ""}" data-m="-1">cells</button>` +
+      words.map((w, i) => `<button class="chip ${S.mode === i ? "on" : ""}" data-m="${i}">attention to "${w}"</button>`).join("");
+    document.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { S.mode = +b.dataset.m; renderCanvas(); renderCanvasModeChips(); });
+  }
+  function renderCanvas() {
+    const aw = allWeights();
+    const g = $("work-grid");
+    g.innerHTML = X.map((x, i) => {
+      const attn = S.mode >= 0;
+      const bg = attn ? `rgba(47,111,237,${0.08 + aw[i][S.mode] * 0.85})` : cellColor(x);
+      const txt = attn ? `<b>${Math.round(aw[i][S.mode] * 100)}%</b>${cellLabel(i)}` : `<b>${i}</b>${cellLabel(i)}`;
+      return `<div class="tcell ${i === S.cell ? "sel" : ""}" data-i="${i}" style="background:${bg};${attn && aw[i][S.mode] > 0.45 ? "color:#fff" : ""}">${txt}</div>`;
+    }).join("");
+    g.querySelectorAll(".tcell").forEach(d => d.onclick = () => selectCell(+d.dataset.i));
+  }
+  function selectCell(i) { S.cell = i; S.qo = null; refresh(); }
+
+  function plot(c) {
+    const R = 2.2, Z = 300, s = Z / 2 / R, P = (x, y) => [Z / 2 + x * s, Z / 2 - y * s];
+    let h = `<svg viewBox="0 0 ${Z} ${Z}" width="${Z}" height="${Z}" style="max-width:100%;border:1px solid var(--line);border-radius:8px;background:var(--card)" role="img" aria-label="Q and K vectors drawn on a flat plane">`;
+    h += `<defs>` + c.cols.map((col, i) => `<marker id="mk${i}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${col}"/></marker>`).join("") +
+      `<marker id="mkq" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent2)"/></marker></defs>`;
+    for (let t = -2; t <= 2; t++) {
+      const [x1, y1] = P(t, -R), [x2, y2] = P(t, R), [x3, y3] = P(-R, t), [x4, y4] = P(R, t);
+      h += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="currentColor" stroke-opacity="${t === 0 ? .5 : .12}"/>`;
+      h += `<line x1="${x3}" y1="${y3}" x2="${x4}" y2="${y4}" stroke="currentColor" stroke-opacity="${t === 0 ? .5 : .12}"/>`;
+    }
+    const [ox, oy] = P(0, 0);
+    c.K.forEach((k, i) => {
+      const [x, y] = P(k[0], k[1]);
+      h += `<line x1="${ox}" y1="${oy}" x2="${x}" y2="${y}" stroke="${c.cols[i]}" stroke-width="2.2" marker-end="url(#mk${i})"/>`;
+      h += `<text x="${x + 5}" y="${y - 5}" font-size="12" fill="${c.cols[i]}" font-weight="600">${c.words[i]}</text>`;
+    });
+    const [qx, qy] = P(c.q[0], c.q[1]);
+    h += `<line x1="${ox}" y1="${oy}" x2="${qx}" y2="${qy}" stroke="var(--accent2)" stroke-width="3.2" marker-end="url(#mkq)"/>`;
+    h += `<text x="${qx + 6}" y="${qy + 14}" font-size="12" fill="var(--accent2)" font-weight="700">Q</text>`;
+    h += `<text x="6" y="14" font-size="11" fill="currentColor" opacity=".6">axes: d1 right, d2 up</text></svg>`;
+    return h + `<div class="note" style="max-width:300px">Arrows = K of each word. Thick orange = this cell's Q. The more an arrow points the same way as Q (and the longer it is), the higher the score.</div>`;
+  }
+
+  function renderWork() {
+    const c = cur(), idx = S.cell, q = c.q;
+    const editing = !!S.qo;
+    $("work-intro").innerHTML = `<p style="margin-top:0">Selected: <b>cell ${idx}</b> (row ${Math.floor(idx / GW)}, column ${idx % GW}).<br>
+      Its row <code>x</code> = [${X[idx].map(f2).join(", ")}] gives
+      <code>Q</code> = x &times; W<sub>q</sub> = [${Qall[idx].map(f2).join(", ")}]${editing ? ` <span class="note">(edited to [${q.map(f2).join(", ")}])</span>` : ""}.</p>
+      <p class="note">Switch the canvas to "attention to ..." to colour all cells by how much they look at one word. Drag the q1/q2 sliders to change what this cell is asking for, and watch the percentages follow.</p>`;
+    $("q1").value = q[0]; $("q2").value = q[1];
+    $("q1v").textContent = f2(q[0]); $("q2v").textContent = f2(q[1]);
+
+    // step 1
+    const scoreMax = Math.max(3, ...c.scores.map(Math.abs));
+    let s1 = `<div class="eq">` + c.words.map((w, i) =>
+      `Q&middot;K(${w.padEnd(7)}) = ${f2(q[0])}&times;${f2(c.K[i][0])} + ${f2(q[1])}&times;${f2(c.K[i][1])}${S.scale ? ` = ${f2(dot(q, c.K[i]))}, &divide;&radic;2` : ""} = <b>${f2(c.scores[i])}</b>`).join("\n") + `</div>`;
+    s1 += c.words.map((w, i) => {
+      const pct = Math.abs(c.scores[i]) / scoreMax * 50;
+      return `<div class="barrow"><span class="lab">${w}</span><span class="val">${f2(c.scores[i])}</span><span class="track"><span class="bar" style="position:absolute;${c.scores[i] >= 0 ? `left:50%` : `right:50%`};width:${pct}%;background:${c.scores[i] >= 0 ? "var(--accent)" : "var(--accent2)"}"></span></span></div>`;
+    }).join("");
+    s1 += `<p class="note">Each score is a dot product: multiply the matching numbers and add. Big and positive = Q and K point the same way.</p>`;
+    $("c1-body").innerHTML = s1;
+    $("c1-plot").innerHTML = plot(c);
+
+    // step 2
+    const mx = Math.max(...c.scores);
+    let s2 = `<div class="eq">softmax: e^score, then divide by the total\n` + c.words.map((w, i) =>
+      `${w.padEnd(7)}  e^${f2(c.scores[i])} = ${f2(Math.exp(c.scores[i]))}`).join("\n") +
+      `\ntotal    = ${f2(c.scores.reduce((s, v) => s + Math.exp(v), 0))}</div>`;
+    s2 += c.words.map((w, i) => `<div class="barrow"><span class="lab">${w}</span><span class="val">${(c.w[i] * 100).toFixed(1)}%</span><span class="track"><span class="bar" style="width:${c.w[i] * 100}%;background:${c.cols[i]}"></span></span></div>`).join("");
+    s2 += `<p class="note">Total = ${(c.w.reduce((a, b) => a + b) * 100).toFixed(1)}%. Why e^score? It makes every number positive and makes the biggest score stand out more, without ever fully ignoring the others.</p>`;
+    $("c2-body").innerHTML = s2;
+
+    // step 3
+    let s3 = `<div class="eq">` + [0, 1].map(j => `mixed[${j + 1}] = ` + c.words.map((w, i) => `${f2(c.w[i])}&times;${f2(c.V[i][j])}`).join(" + ") + ` = <b>${f2(c.y[j])}</b>`).join("\n") + `</div>`;
+    s3 += `<p>Each cell takes ${c.words.map((w, i) => `<b style="color:${c.cols[i]}">${Math.round(c.w[i] * 100)}%</b> of "${w}"`).join(", ")}. Result: <code>mixed</code> = [${c.y.map(f2).join(", ")}].</p>`;
+    $("c3-body").innerHTML = s3;
+
+    // step 4
+    const after = X[idx].map((v, j) => v + c.delta[j]);
+    $("c4-body").innerHTML = `<div class="row">
+      <div><b>W<sub>o</sub></b> <span class="note">[d, W], widens 2 &rarr; 4</span>${table(hdr(4, "w"), ["m1", "m2"], Wo)}</div>
+      <div class="grow">
+        <div class="eq">change = mixed &times; W<sub>o</sub> = [${c.y.map(f2).join(", ")}] &times; W<sub>o</sub> = [${c.delta.map(f2).join(", ")}]
+new row = old row + change</div>
+        ${table(hdr(4, "w"), ["old row", "change", "new row"], [X[idx], c.delta, after])}
+      </div></div>
+      <p class="note">The cell keeps everything it already had and adds what it picked up from the prompt. The row is still 4 numbers long, ready for the next layer.</p>`;
+
+    // stepper visibility
+    ["c1", "c2", "c3", "c4"].forEach((id, k) => $(id).classList.toggle("dim", S.step !== 0 && k + 1 > S.step));
+    $("b-prev").disabled = S.step <= 1; $("b-next").disabled = S.step === 0 || S.step >= 4;
+  }
+
+  // ---------- section 6: all-cells table ----------
+  function renderAll() {
+    const c = cur();
+    $("all-table").innerHTML = table(c.words, X.map((_, i) => `cell ${i} (${cellLabel(i)})`), allWeights(), { pct: true, sel: S.cell, click: true });
+    $("all-table").querySelectorAll("tr.clk").forEach(tr => tr.onclick = () => { selectCell(+tr.dataset.i); $("s-work").scrollIntoView({ behavior: "smooth" }); });
+  }
+
+  // ---------- wiring ----------
+  function refresh() {
+    renderToggles(); renderExpand(); renderQKV(); renderCanvasModeChips(); renderCanvas(); renderWork(); renderAll();
+  }
+  $("q1").oninput = $("q2").oninput = () => { S.qo = [+$("q1").value, +$("q2").value]; renderCanvas(); renderWork(); };
+  $("b-qreset").onclick = () => { S.qo = null; refresh(); };
+  $("scaleBox").onchange = e => { S.scale = e.target.checked; refresh(); };
+  $("b-walk").onclick = () => { S.step = 1; renderWork(); };
+  $("b-next").onclick = () => { S.step = Math.min(4, S.step + 1); renderWork(); };
+  $("b-prev").onclick = () => { S.step = Math.max(1, S.step - 1); renderWork(); };
+  $("b-all").onclick = () => { S.step = 0; renderWork(); };
+
+  renderInputs();
+  refresh();
+})();
+</script>
+</body>
+</html>
