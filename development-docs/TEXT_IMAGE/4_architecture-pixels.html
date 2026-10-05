@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Architecture, Pixel by Pixel</title>
+<style>
+  :root {
+    --bg: #fafaf7; --card: #ffffff; --ink: #1d1d1b; --muted: #666660; --line: #dcdcd4;
+    --accent: #2f6fed; --accent2: #e8590c; --code: #f1f1ea; --good: #2b8a3e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #16161a; --card: #1f1f25; --ink: #ecece6; --muted: #a0a09a; --line: #34343c;
+            --accent: #6c9bff; --accent2: #ff9a57; --code: #2a2a32; --good: #69db7c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 80px; }
+  h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 6px; }
+  h2 { font-size: 1.25rem; margin: 0 0 8px; }
+  h3 { font-size: 1rem; margin: 14px 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 18px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 18px 0; }
+  code, .mono { font-family: ui-monospace, Consolas, monospace; background: var(--code); padding: 1px 6px; border-radius: 4px; font-size: .9em; }
+  .note { color: var(--muted); font-size: .86rem; }
+  .callout { border-left: 4px solid var(--accent2); background: var(--code); padding: 8px 14px; border-radius: 0 8px 8px 0; margin: 12px 0; font-size: .92rem; }
+  .row { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
+  .grow { flex: 1; min-width: 270px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; align-items: center; }
+  .chip { font: inherit; font-size: .85rem; background: var(--code); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; cursor: pointer; }
+  .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .chiplabel { font-size: .85rem; color: var(--muted); }
+  button.btn { font: inherit; background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 6px 14px; cursor: pointer; }
+  button.btn.alt { background: var(--code); color: var(--ink); border: 1px solid var(--line); }
+  button.btn:disabled { opacity: .4; cursor: default; }
+
+  /* diagram */
+  svg.arch text { font-family: system-ui, sans-serif; fill: currentColor; }
+  .sb { cursor: pointer; }
+  .sb rect { fill: var(--code); stroke: currentColor; stroke-opacity: .35; stroke-width: 1.2; rx: 8; }
+  .sb.hl rect { fill: var(--accent); fill-opacity: .22; stroke: var(--accent); stroke-opacity: 1; }
+  .sb.on rect { fill: var(--accent2); fill-opacity: .4; stroke: var(--accent2); stroke-opacity: 1; stroke-width: 3; }
+  .sb:hover rect { stroke-opacity: 1; }
+
+  /* pixel views */
+  .cv { position: relative; width: 256px; height: 256px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: #000; flex: none; }
+  .cv canvas { position: absolute; left: 0; top: 0; width: 256px; height: 256px; image-rendering: pixelated; }
+  .cv canvas.ov { cursor: crosshair; }
+  .cap { font-size: .8rem; color: var(--muted); margin-top: 4px; max-width: 256px; }
+  canvas.px { image-rendering: pixelated; border: 1px solid var(--line); border-radius: 4px; display: block; }
+  .film { display: flex; flex-wrap: wrap; gap: 8px; }
+  .film div { text-align: center; font-size: .72rem; color: var(--muted); cursor: pointer; border: 2px solid transparent; border-radius: 6px; padding: 2px; }
+  .film div.on { border-color: var(--accent2); color: var(--ink); }
+  .heat { display: grid; gap: 1px; margin: 4px 0; }
+  .heat i { display: block; width: 14px; height: 14px; }
+  .tok { display: inline-block; background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; margin: 2px; font-family: ui-monospace, Consolas, monospace; font-size: .85rem; }
+  .bars { display: flex; align-items: flex-end; gap: 2px; height: 70px; margin: 4px 0; }
+  .bars i { display: block; width: 7px; background: var(--accent); min-height: 1px; }
+  .bars i.neg { background: var(--accent2); }
+  .pbar { display: flex; align-items: center; gap: 8px; font-family: ui-monospace, Consolas, monospace; font-size: .8rem; margin: 3px 0; }
+  .pbar .l { width: 60px; } .pbar .t { flex: 1; min-width: 90px; max-width: 200px; background: var(--code); height: 12px; border-radius: 3px; } .pbar .t i { display: block; height: 12px; border-radius: 3px; }
+  #flatWrap { position: relative; width: 100%; max-width: 560px; height: 250px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+  #flatStage { position: relative; }
+  .ft { position: absolute; border-radius: 2px; transition: left .9s ease, top .9s ease, width .9s ease, height .9s ease; }
+  .stackrow { display: flex; gap: 6px; align-items: center; margin: 5px 0; flex-wrap: wrap; }
+  .stackrow b { width: 70px; font-size: .78rem; color: var(--muted); }
+  .stackrow span { font-size: .75rem; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--code); }
+  .io { display: grid; grid-template-columns: 52px 1fr; gap: 2px 10px; font-size: .92rem; margin: 6px 0; }
+  .io b { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; padding-top: 3px; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>The Architecture, Pixel by Pixel</h1>
+<p class="sub">One picture of the whole text-to-image machine. Click any box in the diagram (or the numbers under it) to see what it does to a real 128 &times; 128 pixel canvas. No calculations here, only what changes and where.</p>
+
+<div class="callout">
+  <b>How to read the pixels.</b> The picture is <b>128 &times; 128 pixels</b>. It is cut into <b>16 &times; 16 = 256 cells</b>, each covering an 8 &times; 8 block of pixels (a real model cuts much coarser, around 32 &times; 32 pixels per cell, but then you'd only see a handful of cells). Also, a real model's noise and cells live in a compressed "latent" form, not in pixels. We draw them as pixels so you can <i>see</i> what each cell stands for. Attention maps below are hand-set from the picture's regions to be readable; real ones are messier.
+</div>
+
+<!-- ============ ARCHITECTURE DIAGRAM ============ -->
+<section>
+  <h2>The architecture</h2>
+  <svg class="arch" viewBox="0 0 780 750" style="width:100%;max-width:780px;display:block" role="img" aria-label="Architecture of a text-to-image model">
+    <defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+
+    <text x="125" y="20" font-size="12" font-weight="700" text-anchor="middle" opacity=".6">CANVAS LANE</text>
+    <text x="395" y="20" font-size="12" font-weight="700" text-anchor="middle" opacity=".6">TEXT LANE</text>
+    <text x="645" y="20" font-size="12" font-weight="700" text-anchor="middle" opacity=".6">NOISE LEVEL</text>
+
+    <!-- arrows (drawn first) -->
+    <g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#ah)">
+      <line x1="125" y1="86" x2="125" y2="104"/><line x1="125" y1="161" x2="125" y2="179"/><line x1="125" y1="236" x2="125" y2="254"/>
+      <line x1="125" y1="311" x2="125" y2="392"/>
+      <line x1="395" y1="86" x2="395" y2="104"/><line x1="395" y1="161" x2="395" y2="392"/>
+      <line x1="645" y1="161" x2="645" y2="344"/>
+      <line x1="237" y1="441" x2="288" y2="441"/><line x1="492" y1="441" x2="543" y2="441"/>
+      <line x1="395" y1="562" x2="395" y2="584"/><line x1="395" y1="641" x2="395" y2="659"/>
+      <line x1="492" y1="688" x2="543" y2="688"/>
+      <path d="M290 688 L6 688 L6 208 L22 208" stroke-dasharray="5 4"/>
+    </g>
+    <text x="150" y="690" font-size="11" text-anchor="middle" opacity=".7">repeat for all 8 steps</text>
+    <text x="518" y="680" font-size="11" text-anchor="middle" opacity=".7">last step</text>
+    <text x="545" y="300" font-size="11" opacity=".7">&sigma; is fed to every block</text>
+    <text x="410" y="300" font-size="11" opacity=".7">the same words are read in every block</text>
+
+    <!-- stage boxes -->
+    <g class="sb" data-s="3"><rect x="20" y="30" width="210" height="56"/><text x="125" y="54" font-size="13" font-weight="600" text-anchor="middle">3  Noise canvas</text><text x="125" y="72" font-size="11" text-anchor="middle">128 x 128 random pixels</text></g>
+    <g class="sb" data-s="4"><rect x="20" y="105" width="210" height="56"/><text x="125" y="129" font-size="13" font-weight="600" text-anchor="middle">4  Cut into cells</text><text x="125" y="147" font-size="11" text-anchor="middle">16 x 16 = 256 cells</text></g>
+    <g class="sb" data-s="5"><rect x="20" y="180" width="210" height="56"/><text x="125" y="204" font-size="13" font-weight="600" text-anchor="middle">5  Flatten to tokens</text><text x="125" y="222" font-size="11" text-anchor="middle">[N, C] = 256 rows</text></g>
+    <g class="sb" data-s="6"><rect x="20" y="255" width="210" height="56"/><text x="125" y="279" font-size="13" font-weight="600" text-anchor="middle">6  Widen the rows</text><text x="125" y="297" font-size="11" text-anchor="middle">[N, W]</text></g>
+
+    <g class="sb" data-s="1"><rect x="290" y="30" width="210" height="56"/><text x="395" y="54" font-size="13" font-weight="600" text-anchor="middle">1  Prompt to word grid</text><text x="395" y="72" font-size="11" text-anchor="middle">text model &rarr; [T, D]</text></g>
+    <g class="sb" data-s="2"><rect x="290" y="105" width="210" height="56"/><text x="395" y="129" font-size="13" font-weight="600" text-anchor="middle">2  Widen the words</text><text x="395" y="147" font-size="11" text-anchor="middle">[T, W]</text></g>
+
+    <rect x="545" y="105" width="200" height="56" rx="8" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="4 3"/>
+    <text x="645" y="129" font-size="13" font-weight="600" text-anchor="middle">&sigma; = 1.0 &rarr; 0.0</text><text x="645" y="147" font-size="11" text-anchor="middle">8 steps, one per loop</text>
+
+    <!-- the stack -->
+    <rect x="12" y="344" width="756" height="222" rx="12" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-dasharray="6 4"/>
+    <text x="30" y="368" font-size="13" font-weight="700">A stack of L blocks</text>
+    <g class="sb" data-s="7"><rect x="35" y="392" width="200" height="98"/><text x="135" y="420" font-size="13" font-weight="600" text-anchor="middle">7  Self-attention</text><text x="135" y="440" font-size="11" text-anchor="middle">cells look at cells</text><text x="135" y="456" font-size="11" text-anchor="middle">&ldquo;what is around me?&rdquo;</text></g>
+    <g class="sb" data-s="8"><rect x="290" y="392" width="200" height="98"/><text x="390" y="420" font-size="13" font-weight="600" text-anchor="middle">8  Cross-attention</text><text x="390" y="440" font-size="11" text-anchor="middle">cells look at words</text><text x="390" y="456" font-size="11" text-anchor="middle">&ldquo;what does the prompt say?&rdquo;</text></g>
+    <g class="sb" data-s="9"><rect x="545" y="392" width="200" height="98"/><text x="645" y="420" font-size="13" font-weight="600" text-anchor="middle">9  MLP</text><text x="645" y="440" font-size="11" text-anchor="middle">each cell thinks alone</text><text x="645" y="456" font-size="11" text-anchor="middle">&ldquo;what do I make of all this?&rdquo;</text></g>
+    <g class="sb" data-s="10"><rect x="290" y="506" width="200" height="46"/><text x="390" y="534" font-size="13" font-weight="600" text-anchor="middle">10  Repeat &times; L blocks</text></g>
+
+    <g class="sb" data-s="11"><rect x="290" y="585" width="200" height="56"/><text x="390" y="609" font-size="13" font-weight="600" text-anchor="middle">11  Output + update</text><text x="390" y="627" font-size="11" text-anchor="middle">narrow to C, move the canvas</text></g>
+    <g class="sb" data-s="12"><rect x="290" y="660" width="200" height="56"/><text x="390" y="684" font-size="13" font-weight="600" text-anchor="middle">12  The loop</text><text x="390" y="702" font-size="11" text-anchor="middle">noise &rarr; picture</text></g>
+    <g class="sb" data-s="13"><rect x="545" y="660" width="200" height="56"/><text x="645" y="684" font-size="13" font-weight="600" text-anchor="middle">13  Decode to pixels</text><text x="645" y="702" font-size="11" text-anchor="middle">cells &rarr; 128 x 128 image</text></g>
+  </svg>
+  <div class="chips" id="stageChips"></div>
+</section>
+
+<!-- ============ PANEL ============ -->
+<section id="panel">
+  <h2 id="pTitle"></h2>
+  <div class="chips" id="stepCtl">
+    <span class="chiplabel">Canvas at step</span>
+    <input type="range" id="stepR" min="0" max="8" step="1" value="0" style="width:160px">
+    <b class="mono" id="stepV"></b>
+    <button class="btn alt" id="playB">&#9654; Play</button>
+    <span class="note" id="sigNote"></span>
+  </div>
+  <div class="row">
+    <div id="vis"></div>
+    <div class="grow">
+      <div class="io" id="io"></div>
+      <div id="extra"></div>
+    </div>
+  </div>
+  <div class="chips" style="margin-top:14px">
+    <button class="btn alt" id="prevB">&larr; Previous box</button>
+    <button class="btn" id="nextB">Next box &rarr;</button>
+  </div>
+</section>
+
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const G = 16, CELL = 8, PX = 128, NC = G * G;
+  const SIG = [1, 0.99375, 0.9875, 0.98125, 0.975, 0.909375, 0.725, 0.421875, 0];
+  const WORDS = ["red", "car", "beach", "sunset"];
+  const TOKS = ["a", "red", "car", "on", "a", "beach", "at", "sunset"];
+  const S = { stage: 1, step: 0, cell: 11 * G + 7, word: 1, flat: "grid", timer: null };
+
+  // ---------- seeded random ----------
+  function mulberry32(a) { return function() { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const gauss = r => { const u = Math.max(r(), 1e-9), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const hash = (x, y) => (Math.imul(x, 73856093) ^ Math.imul(y, 19349663)) >>> 0;
+  const lerp = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+
+  // ---------- the clean picture: sky, sun, sand, red car ----------
+  function pixel(x, y) {
+    const hz = 70;
+    let c;
+    if (y < hz) {
+      c = lerp([250, 150, 80], [253, 224, 160], y / hz);
+      const d = Math.hypot(x - 64, y - 52);
+      if (d < 13) c = [255, 244, 214];
+      else if (d < 22) c = lerp(c, [255, 230, 170], (22 - d) / 9 * 0.6);
+    } else {
+      c = lerp([232, 204, 146], [206, 172, 108], (y - hz) / 58);
+      const j = (hash(x, y) % 9) - 4; c = c.map(v => v + j);
+    }
+    const red = [200, 40, 40];
+    if (x >= 32 && x <= 96 && y >= 86 && y <= 102) { c = red; if (x >= 91 && x <= 95 && y >= 90 && y <= 93) c = [255, 225, 120]; }
+    if (y >= 74 && y < 86) {
+      const xl = 46 + (86 - y) * 0.6, xr = 82 - (86 - y) * 0.6;
+      if (x >= xl && x <= xr) {
+        c = red;
+        if (y >= 76 && x >= xl + 3 && x <= xr - 3 && Math.abs(x - 64) > 1) c = [170, 215, 240];
+      }
+    }
+    for (const wx of [46, 82]) {
+      const d = Math.hypot(x - wx, y - 102);
+      if (d < 7) c = d < 3 ? [150, 150, 155] : [35, 35, 40];
+    }
+    return c;
+  }
+  const clean = new Float32Array(PX * PX * 3);
+  for (let y = 0; y < PX; y++) for (let x = 0; x < PX; x++) { const c = pixel(x, y); for (let k = 0; k < 3; k++) clean[(y * PX + x) * 3 + k] = Math.max(0, Math.min(255, c[k])); }
+
+  // ---------- noise, blurred guess, and the 8-step run ----------
+  const noise = new Float32Array(PX * PX * 3);
+  { const r = mulberry32(42); for (let i = 0; i < noise.length; i++) noise[i] = r() * 255; }
+  function boxBlur(src, rad) {
+    const tmp = new Float32Array(src.length), out = new Float32Array(src.length);
+    for (let y = 0; y < PX; y++) for (let x = 0; x < PX; x++) for (let k = 0; k < 3; k++) {
+      let s = 0, n = 0; for (let d = -rad; d <= rad; d++) { const xx = x + d; if (xx >= 0 && xx < PX) { s += src[(y * PX + xx) * 3 + k]; n++; } }
+      tmp[(y * PX + x) * 3 + k] = s / n;
+    }
+    for (let y = 0; y < PX; y++) for (let x = 0; x < PX; x++) for (let k = 0; k < 3; k++) {
+      let s = 0, n = 0; for (let d = -rad; d <= rad; d++) { const yy = y + d; if (yy >= 0 && yy < PX) { s += tmp[(yy * PX + x) * 3 + k]; n++; } }
+      out[(y * PX + x) * 3 + k] = s / n;
+    }
+    return out;
+  }
+  const blur = boxBlur(clean, 6);
+  const canv = [Float32Array.from(noise)], guess = [];
+  for (let k = 0; k < 8; k++) {
+    const sg = SIG[k], sn = SIG[k + 1], sharp = 1 - 0.6 * sg * sg * sg, f = (sg - sn) / sg;
+    const g = new Float32Array(clean.length), nx = new Float32Array(clean.length), x = canv[k];
+    for (let i = 0; i < g.length; i++) { g[i] = blur[i] + sharp * (clean[i] - blur[i]); nx[i] = x[i] + f * (g[i] - x[i]); }
+    guess.push(g); canv.push(nx);
+  }
+  const frac = k => (SIG[k] - SIG[k + 1]) / SIG[k];
+
+  // ---------- cells ----------
+  function region(i) {
+    const r = Math.floor(i / G), c = i % G, cx = c * CELL + 4, cy = r * CELL + 4;
+    if (cx >= 32 && cx <= 96 && cy >= 74 && cy <= 109) return "car";
+    if (cy < 70) return Math.hypot(cx - 64, cy - 52) < 22 ? "sun" : "sky";
+    return "sand";
+  }
+  const REG = Array.from({ length: NC }, (_, i) => region(i));
+  const TARGET = { sun: [.1, .05, .05, .8], sky: [.2, .1, .1, .6], car: [.35, .5, .1, .05], sand: [.1, .1, .65, .15] };
+  const tw = REG.map((rg, i) => {
+    const r = mulberry32(i * 31 + 5), t = TARGET[rg].map(v => v * (0.9 + 0.2 * r())), s = t.reduce((a, b) => a + b);
+    return t.map(v => v / s);
+  });
+  const flat = () => Math.pow(SIG[S.step], 4);              // 1 = no idea yet, 0 = sure
+  const crossW = i => tw[i].map(v => (1 - flat()) * v + flat() * 0.25);
+  function selfW(c) {
+    const a = flat(), s = 2 + 8 * a, rc = Math.floor(c / G), cc = c % G, out = [];
+    let sum = 0;
+    for (let j = 0; j < NC; j++) {
+      const d2 = (Math.floor(j / G) - rc) ** 2 + (j % G - cc) ** 2;
+      const v = Math.exp(-d2 / (2 * s * s)) * (REG[j] === REG[c] || (REG[j] === "sky" && REG[c] === "sun") || (REG[j] === "sun" && REG[c] === "sky") ? 1 : 0.2);
+      out.push(v); sum += v;
+    }
+    return out.map(v => v / sum);
+  }
+  function cellAvg(arr, i) {
+    const r0 = Math.floor(i / G) * CELL, c0 = (i % G) * CELL; let s = [0, 0, 0];
+    for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) for (let k = 0; k < 3; k++) s[k] += arr[((r0 + y) * PX + c0 + x) * 3 + k];
+    return s.map(v => Math.round(v / (CELL * CELL)));
+  }
+
+  // ---------- canvas helpers ----------
+  function paint(cv, arr, w = PX) {
+    const ctx = cv.getContext("2d"), im = ctx.createImageData(w, w);
+    for (let i = 0; i < w * w; i++) { im.data[i * 4] = arr[i * 3]; im.data[i * 4 + 1] = arr[i * 3 + 1]; im.data[i * 4 + 2] = arr[i * 3 + 2]; im.data[i * 4 + 3] = 255; }
+    ctx.putImageData(im, 0, 0);
+  }
+  function cvBlock(id) { return `<div class="cv" id="${id}"><canvas class="base" width="${PX}" height="${PX}"></canvas><canvas class="ov" width="256" height="256"></canvas></div>`; }
+  function cvInit(id, arr, overlay, onCell) {
+    const root = $(id); if (!root) return;
+    const [base, ov] = root.querySelectorAll ? root.querySelectorAll("canvas") : [$(id + "b"), $(id + "o")];
+    paint(base, arr);
+    const ctx = ov.getContext("2d"); ctx.clearRect(0, 0, 256, 256);
+    if (overlay) overlay(ctx);
+    if (onCell) {
+      const pick = e => { const r = ov.getBoundingClientRect(); const x = Math.floor((e.clientX - r.left) * 256 / r.width / 16), y = Math.floor((e.clientY - r.top) * 256 / r.height / 16);
+        return Math.max(0, Math.min(15, y)) * G + Math.max(0, Math.min(15, x)); };
+      ov.onclick = e => onCell(pick(e), true);
+      ov.onmousemove = e => onCell(pick(e), false);
+    }
+  }
+  const outline = (ctx, i, col = "#e8590c") => { ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.strokeRect((i % G) * 16 + 1.5, Math.floor(i / G) * 16 + 1.5, 13, 13); };
+  const gridLines = ctx => { ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 1; for (let t = 0; t <= 16; t++) { ctx.beginPath(); ctx.moveTo(t * 16 + .5, 0); ctx.lineTo(t * 16 + .5, 256); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, t * 16 + .5); ctx.lineTo(256, t * 16 + .5); ctx.stroke(); } };
+  const heatCol = v => v >= 0 ? `rgba(47,111,237,${Math.min(.85, Math.abs(v) * .6)})` : `rgba(232,89,12,${Math.min(.85, Math.abs(v) * .6)})`;
+  const rowCol = i => `${Math.floor(i / G)}, ${i % G}`;
+  const f0 = v => Math.round(v);
+
+  function heatGrid(rows, cols, seed, w) {
+    const r = mulberry32(seed); let h = `<div class="heat" style="grid-template-columns:repeat(${cols},${w || 14}px)">`;
+    for (let i = 0; i < rows * cols; i++) h += `<i style="background:${heatCol(gauss(r))}"></i>`;
+    return h + `</div>`;
+  }
+  function barsFor(seed, n, scale) {
+    const r = mulberry32(seed); let h = `<div class="bars">`;
+    for (let i = 0; i < n; i++) { const v = gauss(r) * (scale || 1); h += `<i class="${v < 0 ? "neg" : ""}" style="height:${Math.min(70, Math.abs(v) * 28 + 2)}px"></i>`; }
+    return h + `</div>`;
+  }
+  function wideBars(cell, nOut) {                          // C=16 numbers -> fixed seeded table -> nOut numbers
+    const r = mulberry32(cell * 977 + 3), x = Array.from({ length: 16 }, () => gauss(r)), T = mulberry32(12345);
+    const out = Array.from({ length: nOut }, () => { let s = 0; for (let k = 0; k < 16; k++) s += x[k] * gauss(T) * 0.45; return s; });
+    return { x, out };
+  }
+  const barsOf = arr => `<div class="bars">${arr.map(v => `<i class="${v < 0 ? "neg" : ""}" style="height:${Math.min(70, Math.abs(v) * 28 + 2)}px"></i>`).join("")}</div>`;
+
+  // ---------- stage definitions ----------
+  const ST = {
+    1: { t: "Box 1: Prompt to word grid", chip: "Prompt",
+      io: ["Text, e.g. &ldquo;a red car on a beach at sunset&rdquo;", "A text model reads it and writes one row of numbers per token, with the neighbouring words' meaning mixed in.", "A grid <code>[T, D]</code>, with T tokens and D numbers each."],
+      vis: () => `<div>${TOKS.map(t => `<span class="tok">${t}</span>`).join("")}</div><div style="margin:6px 0">&#9660; text model</div>${heatGrid(8, 12, 7, 18)}<div class="note">8 rows (tokens) &times; 12 columns (D). A real prompt has more tokens and thousands of columns.</div>`,
+      extra: `<p class="note">We covered this earlier, so we move on. Remember: the output is a table of numbers. This is the only place the English prompt is used.</p>` },
+    2: { t: "Box 2: Widen the words", chip: "Widen words",
+      io: ["The grid <code>[T, D]</code>", "One learned table converts each word row from D numbers to W numbers, the same length as the canvas rows will have.", "<code>[T, W]</code>. Same words, wider rows, ready to be compared with the canvas."],
+      vis: () => `<div class="row"><div>${heatGrid(8, 12, 7, 14)}<div class="note">[T, D] = 8 &times; 12</div></div><div style="align-self:center">&rarr;<br>table</div><div>${heatGrid(8, 24, 8, 10)}<div class="note">[T, W] = 8 &times; 24</div></div></div>`,
+      extra: `<p class="note">These rows stay the same for the whole run. Every block reads them again.</p>` },
+    3: { t: "Box 3: The noise canvas", chip: "Noise canvas", canvas: true,
+      io: ["A seed number (e.g. 42).", "Random numbers fill the canvas. Same seed, same noise.", "A canvas that looks like TV static. No picture, no shapes."],
+      vis: () => cvBlock("c") + `<div class="cap">128 &times; 128 pixels at the chosen step. Step 0 is pure noise.</div>`,
+      post: () => cvInit("c", canv[S.step]),
+      extra: `<p>Drag the step slider to see where this canvas is headed: by step 8 it is the finished picture. The canvas is the only thing that changes between steps. Everything else in the diagram is fixed.</p>` },
+    4: { t: "Box 4: Cut the canvas into cells", chip: "Cells", canvas: true,
+      io: ["The canvas.", "It is cut into a grid of cells. Each cell stands for an 8 &times; 8 block of pixels and holds <code>C</code> numbers about that block.", "256 cells, each with C numbers."],
+      vis: () => `<div class="row">${cvBlock("c")}<div><b class="mono" id="zl"></b><canvas id="zoom" class="px" width="8" height="8" style="width:96px;height:96px"></canvas><div class="note">that cell's 64 pixels, magnified</div><div style="margin-top:6px"><span class="note">its C = 16 numbers:</span><div id="zb"></div></div></div></div>`,
+      post: () => {
+        const draw = i => {
+          S.cell = i; const z = $("zoom"), ctx = z.getContext("2d"), im = ctx.createImageData(8, 8), r0 = Math.floor(i / G) * 8, c0 = (i % G) * 8;
+          for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) for (let k = 0; k < 3; k++) im.data[(y * 8 + x) * 4 + k] = canv[S.step][((r0 + y) * PX + c0 + x) * 3 + k], im.data[(y * 8 + x) * 4 + 3] = 255;
+          ctx.putImageData(im, 0, 0); $("zl").textContent = `cell ${i}  (row ${Math.floor(i / G)}, col ${i % G})`; $("zb").innerHTML = barsFor(i * 13 + 1, 16);
+          cvInit("c", canv[S.step], c => { gridLines(c); outline(c, i); }, (j, click) => { if (click || true) draw(j); });
+        };
+        draw(S.cell);
+      },
+      extra: `<p>Hover over the canvas. The numbers for a cell sum up that block's pixels in a compact, learned form (the bars are illustrative). At step 0 they are random.</p>` },
+    5: { t: "Box 5: Flatten into tokens", chip: "Flatten", canvas: true,
+      io: ["The 16 &times; 16 grid of cells.", "Every cell is written as one row, left to right, top to bottom.", "A list of 256 rows, <code>[N, C]</code>. Cell (row, col) becomes row <code>row &times; 16 + col</code>."],
+      vis: () => `<div class="chips"><button class="btn" id="fB">Flatten the grid</button><button class="btn alt" id="uB">Put it back</button></div><div id="flatWrap"><div id="flatStage"></div></div><div class="note" id="flatNote">Hover a tile.</div>`,
+      post: () => {
+        const stage = $("flatStage"); stage.style.width = Math.max(16 * 14, NC * 10) + "px"; stage.style.height = "230px";
+        stage.innerHTML = Array.from({ length: NC }, (_, i) => { const c = cellAvg(canv[S.step], i); return `<div class="ft" data-i="${i}" style="background:rgb(${c})"></div>`; }).join("");
+        const tiles = [...stage.children];
+        const place = m => tiles.forEach((d, i) => {
+          if (m === "grid") { d.style.width = d.style.height = "13px"; d.style.left = (i % G) * 14 + "px"; d.style.top = Math.floor(i / G) * 14 + "px"; }
+          else { d.style.width = "9px"; d.style.height = "30px"; d.style.left = i * 10 + "px"; d.style.top = "100px"; }
+        });
+        place(S.flat);
+        tiles.forEach(d => { d.onmouseenter = () => { const i = +d.dataset.i; $("flatNote").textContent = `Token ${i} = row ${Math.floor(i / G)} x 16 + column ${i % G}`; }; });
+        $("fB").onclick = () => { S.flat = "list"; place("list"); }; $("uB").onclick = () => { S.flat = "grid"; place("grid"); };
+      },
+      extra: `<p>Neighbouring cells in the picture are no longer neighbours in the list. Cell (3, 15) and cell (4, 0) sit side by side in the list but at opposite edges of the picture. The model doesn't read this list as a picture. It relies on extra position information it is given, which is why self-attention is needed later.</p>` },
+    6: { t: "Box 6: Widen the rows", chip: "Widen cells", canvas: true,
+      io: ["256 rows of C numbers.", "One learned table (the same for every row) makes each row W numbers long.", "<code>[N, W]</code>. The extra room is where the blocks will do their work."],
+      vis: () => { const b = wideBars(S.cell, 64); return `<div class="note">Cell ${S.cell} (row ${Math.floor(S.cell / G)}, col ${S.cell % G}); change it in box 4.</div><div class="row"><div><b class="mono">C = 16</b>${barsOf(b.x)}</div><div style="align-self:center">&rarr; table &rarr;</div><div><b class="mono">W = 64</b>${barsOf(b.out)}</div></div>`; },
+      extra: `<p class="note">Right after this step the 64 numbers are only re-written versions of the 16, so no new information has been added. The blocks fill the extra space.</p>` },
+    7: { t: "Box 7: Self-attention (cells look at cells)", chip: "Self-attn", canvas: true, jump: true,
+      io: ["All 256 cell rows.", "Each cell asks &ldquo;which other cells matter to me?&rdquo;, takes a mix of those cells' rows, and adds it to its own.", "The same 256 rows, each now aware of its surroundings."],
+      vis: () => cvBlock("c") + `<div class="cap" id="cap7"></div>`,
+      post: () => {
+        const run = i => { S.cell = i; const w = selfW(i), mx = Math.max(...w);
+          cvInit("c", canv[S.step], c => { w.forEach((v, j) => { c.fillStyle = `rgba(47,111,237,${(v / mx) * .8})`; c.fillRect((j % G) * 16, Math.floor(j / G) * 16, 16, 16); }); gridLines(c); outline(c, i); }, (j, click) => { if (click) run(j); });
+          $("cap7").textContent = `Selected cell ${i} (${REG[i]}). Blue = how much it looks at each cell. Click another cell.`; };
+        run(S.cell);
+      },
+      extra: `<p>A cell of the car looks mostly at other car cells, a sky cell at nearby sky cells. This is how the model keeps one object in one piece: the car's cells agree with each other about being a car.</p><p class="note">At step 0 the canvas is just noise, so there is nothing to look for and the blue map is spread nearly everywhere. As the canvas becomes a picture, the map gets focused. Slide the step to see it.</p>` },
+    8: { t: "Box 8: Cross-attention (cells look at words)", chip: "Cross-attn", canvas: true, jump: true,
+      io: ["The 256 cell rows and the word rows <code>[T, W]</code>.", "Each cell takes a percentage of each word's content and adds it to its own row.", "The same 256 rows, now carrying information from the prompt."],
+      vis: () => `<div class="chips"><span class="chiplabel">Show attention to:</span>${WORDS.map((w, i) => `<button class="chip ${S.word === i ? "on" : ""}" data-w="${i}">${w}</button>`).join("")}</div><div class="row">${cvBlock("c")}<div><b>Cell <span id="cc"></span></b><div id="cbars"></div></div></div><div class="cap" id="cap8"></div>`,
+      post: () => {
+        document.querySelectorAll("#vis [data-w]").forEach(b => b.onclick = () => { S.word = +b.dataset.w; render(); });
+        const run = i => { S.cell = i;
+          cvInit("c", canv[S.step], c => { for (let j = 0; j < NC; j++) { c.fillStyle = `rgba(47,111,237,${crossW(j)[S.word] * .9})`; c.fillRect((j % G) * 16, Math.floor(j / G) * 16, 16, 16); } gridLines(c); outline(c, i); }, (j, click) => { if (click) run(j); });
+          const w = crossW(i); $("cc").textContent = `${i} (${REG[i]})`;
+          $("cbars").innerHTML = WORDS.map((n, k) => `<div class="pbar"><span class="l">${n}</span><span class="t"><i style="width:${w[k] * 100}%;background:var(--accent)"></i></span>${Math.round(w[k] * 100)}%</div>`).join("");
+          $("cap8").textContent = `Blue = how much each cell takes of "${WORDS[S.word]}". Click a cell for its full split.`; };
+        run(S.cell);
+      },
+      extra: `<p>This is where the prompt reaches the picture. Car cells take most of &ldquo;car&rdquo; and &ldquo;red&rdquo;, sand cells take &ldquo;beach&rdquo;, and sky cells take &ldquo;sunset&rdquo;. The words themselves never change.</p><p class="note">The maps are hand-set from the picture's regions so they're easy to read. Early in the run (low step), they're almost flat because a noisy canvas gives cells little to tell them apart.</p>` },
+    9: { t: "Box 9: MLP (each cell thinks alone)", chip: "MLP", canvas: true, jump: true,
+      io: ["One cell row at a time.", "The row goes through a learned table that makes it wider, then a bend (an activation), then a table that brings it back, and the result is added to the row.", "The same rows, each processed independently. No cell looks at any other."],
+      vis: () => `<div class="row">${cvBlock("c")}<div><b class="mono">one cell, alone</b>
+        <svg viewBox="0 0 220 170" width="220" class="arch" style="display:block"><g stroke="currentColor" fill="none" stroke-width="1.4" marker-end="url(#ah)">
+          <line x1="110" y1="26" x2="110" y2="44"/><line x1="110" y1="76" x2="110" y2="92"/><line x1="110" y1="112" x2="110" y2="128"/></g>
+          <rect x="70" y="4" width="80" height="22" rx="5" fill="var(--accent)" fill-opacity=".3" stroke="var(--accent)"/><text x="110" y="19" font-size="11" text-anchor="middle">row (W)</text>
+          <rect x="30" y="46" width="160" height="30" rx="5" fill="var(--code)" stroke="currentColor" stroke-opacity=".4"/><text x="110" y="65" font-size="11" text-anchor="middle">table: widen to 4 x W</text>
+          <rect x="50" y="94" width="120" height="18" rx="5" fill="var(--code)" stroke="currentColor" stroke-opacity=".4"/><text x="110" y="107" font-size="11" text-anchor="middle">bend (activation)</text>
+          <rect x="30" y="130" width="160" height="26" rx="5" fill="var(--code)" stroke="currentColor" stroke-opacity=".4"/><text x="110" y="147" font-size="11" text-anchor="middle">table: back to W, add to row</text></svg></div></div><div class="cap" id="cap9"></div>`,
+      post: () => {
+        const run = i => { S.cell = i;
+          cvInit("c", canv[S.step], c => { c.fillStyle = "rgba(0,0,0,.68)"; c.fillRect(0, 0, 256, 256); c.clearRect((i % G) * 16, Math.floor(i / G) * 16, 16, 16); outline(c, i); }, (j, click) => { if (click) run(j); });
+          $("cap9").textContent = `Only cell ${i} is lit. Its neighbours are not consulted.`; };
+        run(S.cell);
+      },
+      extra: `<p>Self-attention and cross-attention both gather information <i>from elsewhere</i>. The MLP does the thinking about what was gathered. The &ldquo;bend&rdquo; in the middle is what lets it learn things more interesting than simple blends of numbers.</p><p class="note">Every cell uses the same two tables. That's why the model works at any picture size.</p>` },
+    10: { t: "Box 10: Repeat × L blocks", chip: "Repeat",
+      io: ["The 256 rows from the previous block.", "The same three pieces run again with different learned tables.", "The rows keep getting richer, ending as the model's full understanding of each cell."],
+      vis: () => `<div class="stackrow"><b>block 1</b><span>self-attn</span><span>cross-attn</span><span>MLP</span></div><div class="stackrow"><b>block 2</b><span>self-attn</span><span>cross-attn</span><span>MLP</span></div><div class="stackrow"><b>block 3</b><span>self-attn</span><span>cross-attn</span><span>MLP</span></div><div class="stackrow"><b>&nbsp;&hellip;</b></div><div class="stackrow"><b>block L</b><span>self-attn</span><span>cross-attn</span><span>MLP</span></div><div class="note">The canvas rows pass down the stack. The word rows <code>[T, W]</code> are read by cross-attention in <i>every</i> block. &sigma; is fed to every block too.</div>`,
+      extra: `<p>L is dozens. I haven't checked the exact count for your model. One cross-attention per block means dozens of rounds of &ldquo;cells read the prompt&rdquo; per step, and the whole stack runs again on every one of the 8 steps.</p>` },
+    11: { t: "Box 11: The output and the update", chip: "Output+update", canvas: true, clampStep: 7,
+      io: ["The 256 final rows, <code>[N, W]</code>.", "One last table narrows each to C numbers. That output is a direction for each cell. The canvas moves a fraction of the way along it.", "A slightly cleaner canvas, same size as before."],
+      vis: () => { const k = Math.min(S.step, 7); return `<div class="row"><div>${cvBlock("a")}<div class="cap">now: &sigma; = ${SIG[k]}</div></div><div style="align-self:center">&rarr;</div><div>${cvBlock("b")}<div class="cap">the model's guess of the clean canvas (a stand-in)</div></div><div style="align-self:center">&rarr;</div><div>${cvBlock("d")}<div class="cap">next: &sigma; = ${SIG[k + 1]}, moved ${(frac(k) * 100).toFixed(1)}% of the way toward the guess</div></div></div>`; },
+      post: () => { const k = Math.min(S.step, 7); cvInit("a", canv[k]); cvInit("b", guess[k]); cvInit("d", canv[k + 1]); },
+      extra: `<p>The model's output is not the next canvas. It is the instruction for moving it. The size of the move depends on the noise level: tiny when &sigma; is near 1, large at the end. This is why the first five steps barely change anything and the last three do almost all the work.</p><div class="callout">The model's &ldquo;guess&rdquo; here is a stand-in: the true picture blurred more when there is more noise (<code>sharpness = 1 &minus; 0.6 &times; &sigma;&sup3;</code>). In a real model it comes out of the stack above, from the canvas and the prompt.</div>` },
+    12: { t: "Box 12: The loop, noise to picture", chip: "Loop", canvas: true,
+      io: ["The canvas after step k.", "Boxes 5 to 11 run again with the next noise level.", "After 8 rounds, a clean canvas."],
+      vis: () => `<div class="film" id="film">${canv.map((a, k) => `<div data-k="${k}" class="${k === S.step ? "on" : ""}"><canvas class="px" id="th${k}" width="${PX}" height="${PX}" style="width:84px;height:84px"></canvas>step ${k}<br>&sigma;=${SIG[k]}</div>`).join("")}</div>`,
+      post: () => { canv.forEach((a, k) => paint($("th" + k), a)); document.querySelectorAll("#film [data-k]").forEach(d => d.onclick = () => { S.step = +d.dataset.k; $("stepR").value = S.step; render(); }); },
+      extra: `<p>Watch how little happens in steps 0 to 4 and how fast it happens in the last three. That follows from the noise-level list: <code>1.0, 0.99375, 0.9875, 0.98125, 0.975, 0.909375, 0.725, 0.421875, 0.0</code>. Each step removes only the gap between two neighbours in that list.</p><p class="note">A real sampler may also add a little fresh noise after each step. We left that out.</p>` },
+    13: { t: "Box 13: Decode to pixels", chip: "Decode", canvas: true,
+      io: ["The clean canvas of cells.", "A separate decoder (the VAE) turns each cell back into an 8 &times; 8 block of real pixels.", "The finished 128 &times; 128 image."],
+      vis: () => `<div class="row"><div><div class="cv"><canvas id="lat" class="base" width="16" height="16"></canvas></div><div class="cap">what the cells hold: 16 &times; 16 values</div></div><div style="align-self:center">&rarr; decoder &rarr;</div><div>${cvBlock("c")}<div class="cap">128 &times; 128 pixels</div></div></div>`,
+      post: () => { const lat = new Float32Array(NC * 3); for (let i = 0; i < NC; i++) { const c = cellAvg(canv[S.step], i); lat[i * 3] = c[0]; lat[i * 3 + 1] = c[1]; lat[i * 3 + 2] = c[2]; } paint($("lat"), lat, 16); cvInit("c", canv[S.step]); },
+      extra: `<p>The left square shows each cell as one flat colour, which is the most a cell could say if it were only a colour. A real cell holds many numbers, and the decoder uses them all to fill in fine detail: edges, textures, the shape of the wheels.</p><p>This is the only time the model leaves the compressed form and works in pixels. All the earlier work happened on the small cells.</p>` }
+  };
+
+  // ---------- the panel ----------
+  function render() {
+    const d = ST[S.stage];
+    if (d.jump && S.step === 0) { S.step = 6; $("stepR").value = 6; }
+    if (d.clampStep !== undefined && S.step > d.clampStep) { S.step = d.clampStep; $("stepR").value = S.step; }
+    $("pTitle").textContent = d.t;
+    $("stepCtl").style.display = d.canvas ? "flex" : "none";
+    $("stepV").textContent = `${S.step} of 8`;
+    $("sigNote").textContent = S.step === 0 ? "pure noise" : S.step === 8 ? "finished" : `${Math.round((1 - SIG[S.step]) * 100)}% of the noise removed`;
+    $("io").innerHTML = `<b>In</b><span>${d.io[0]}</span><b>Does</b><span>${d.io[1]}</span><b>Out</b><span>${d.io[2]}</span>`;
+    $("vis").innerHTML = d.vis(); $("extra").innerHTML = d.extra || "";
+    if (d.post) d.post();
+    document.querySelectorAll(".sb").forEach(g => { g.classList.toggle("on", +g.dataset.s === S.stage); });
+    document.querySelectorAll("#stageChips .chip").forEach(c => c.classList.toggle("on", +c.dataset.s === S.stage));
+    $("prevB").disabled = S.stage <= 1; $("nextB").disabled = S.stage >= 13;
+  }
+  function go(s) { S.stage = s; render(); }
+
+  // ---------- wiring ----------
+  $("stageChips").innerHTML = Object.keys(ST).map(k => `<button class="chip" data-s="${k}">${k} ${ST[k].chip}</button>`).join("");
+  document.querySelectorAll("#stageChips .chip").forEach(c => c.onclick = () => go(+c.dataset.s));
+  document.querySelectorAll(".sb").forEach(g => g.onclick = () => go(+g.dataset.s));
+  document.querySelectorAll(".sb[data-s='7'],.sb[data-s='8'],.sb[data-s='9']").forEach(g => g.classList.add("hl"));
+  $("prevB").onclick = () => go(Math.max(1, S.stage - 1));
+  $("nextB").onclick = () => go(Math.min(13, S.stage + 1));
+  $("stepR").oninput = e => { S.step = +e.target.value; render(); };
+  $("playB").onclick = () => {
+    if (S.timer) { clearInterval(S.timer); S.timer = null; $("playB").innerHTML = "&#9654; Play"; return; }
+    if (S.step >= 8) { S.step = 0; $("stepR").value = 0; render(); }
+    $("playB").innerHTML = "&#10074;&#10074; Pause";
+    S.timer = setInterval(() => {
+      if (S.step >= 8) { clearInterval(S.timer); S.timer = null; $("playB").innerHTML = "&#9654; Play"; return; }
+      S.step++; $("stepR").value = S.step; render();
+    }, 800);
+  };
+  render();
+})();
+</script>
+</body>
+</html>
