@@ -18,9 +18,34 @@
          font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif; }
   main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 96px; }
   h2.part { font-size: 1.6rem; margin: 48px 0 0; padding-top: 24px; border-top: 2px solid var(--line); }
-  .flowgrid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 16px; align-items: start; }
-  @media (max-width: 800px) { .flowgrid { grid-template-columns: 1fr; } }
-  .flowgrid .card pre.shape { max-height: 260px; overflow: auto; }
+  .launch { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 14px 0; }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  button.btn.big { font-size: 1.05rem; padding: 10px 20px; }
+  .wt { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column; }
+  .wt[hidden] { display: none; }
+  .wt-top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+            padding: 12px 24px; border-bottom: 1px solid var(--line); background: var(--card); }
+  .wt-title { font-weight: 700; font-size: 1.15rem; }
+  .wt-nav { display: flex; gap: 10px; align-items: center; }
+  .wt-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; padding: 16px 28px; }
+  .wt-left { min-height: 0; display: flex; align-items: center; }
+  .wt-left svg { width: 100%; height: 100%; }
+  .wt-right { min-height: 0; overflow: auto; padding-right: 4px; }
+  .wt-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .wt-head h2 { margin: 0; font-size: 1.6rem; }
+  .wt-head .num { flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--accent2); color: #fff;
+                  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem; }
+  .wt .lab { margin: 18px 0 6px; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  ul.pts { margin: 0; padding-left: 1.2em; font-size: 1.1rem; line-height: 1.5; }
+  ul.pts li { margin: 4px 0; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; align-items: baseline; }
+  .kv span { color: var(--ink); }
+  .wt pre.shape { margin: 0; font-size: .9rem; }
+  .wt-dots { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 12px 24px; border-top: 1px solid var(--line); background: var(--card); }
+  @media (max-width: 800px) {
+    .wt-body { grid-template-columns: 1fr; grid-template-rows: 40% 1fr; padding: 12px 16px; gap: 12px; }
+    .wt-top { padding: 10px 16px; }
+  }
   .empty { color: var(--muted); font-style: italic; }
   h1 { font-size: 2rem; line-height: 1.2; margin: 8px 0 8px; }
   h2 { font-size: 1.35rem; margin: 0 0 8px; }
@@ -68,7 +93,6 @@
 
   /* flow */
   .flowbox { display: flex; gap: 8px; align-items: center; margin: 10px 0; flex-wrap: wrap; }
-  #flow-detail { margin-top: 6px; }
   .big { font-size: 1.05rem; }
 
   /* token pieces */
@@ -130,20 +154,13 @@
 <section id="flow">
   <span class="step">THE FLOW</span>
   <h2>Eight steps, start to finish</h2>
-  <p>This is the "Authorization Code" flow. It's the one you should use. Step through it, or click any arrow, and watch what travels where.</p>
-
-  <div class="flowbox">
-    <button class="btn alt" id="f-prev">← Back</button>
-    <button class="btn" id="f-next">Next →</button>
-    <span class="note" id="f-count"></span>
+  <p>This is the "Authorization Code" flow. It's the one you should use. The walkthrough opens full screen, so you see the whole picture at once.</p>
+  <div class="launch">
+    <button class="btn big" id="wt-open">▶ Open the 8-step walkthrough</button>
+    <div class="pills" id="wt-pills"></div>
   </div>
-  <div class="flowgrid" id="flow-grid">
-    <svg id="flow-svg" viewBox="0 0 600 450" width="100%" role="img" aria-label="Sequence of OAuth messages"></svg>
-    <div id="flow-detail" class="card"></div>
-  </div>
-
   <div class="callout blue">
-    <b>Why a code first, then a token?</b> The code travels through the browser (steps 2 and 4), where anyone looking can see it. So it's worth nothing alone. The real tokens only come back on a private server-to-server call (steps 5 and 6) that needs your client secret. Look at the <span class="tag pub">visible</span> and <span class="tag priv">private</span> tags above.
+    <b>Why a code first, then a token?</b> The code travels through the browser, where anyone looking can see it. So it's worth nothing alone. The real tokens only come back on a private server-to-server call that needs your client secret. The walkthrough tags every step <span class="tag pub">visible</span> or <span class="tag priv">private</span>.
   </div>
 </section>
 
@@ -291,6 +308,23 @@ $env:CLIENT_ID="xxx"; $env:CLIENT_SECRET="yyy"; python server.py</pre>
 
 </main>
 
+<div id="wt" class="wt" hidden role="dialog" aria-modal="true" aria-label="OAuth flow walkthrough">
+  <div class="wt-top">
+    <div class="wt-title">Authorization Code flow <span class="note">· 8 steps · use ← → keys</span></div>
+    <div class="wt-nav">
+      <button class="btn alt" id="wt-prev">← Back</button>
+      <span id="wt-count" class="note"></span>
+      <button class="btn" id="wt-next">Next →</button>
+      <button class="btn alt" id="wt-close" aria-label="Close walkthrough">✕ Close</button>
+    </div>
+  </div>
+  <div class="wt-body">
+    <div class="wt-left"><svg id="wt-svg" viewBox="0 0 600 450" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Sequence of OAuth messages"></svg></div>
+    <div class="wt-right" id="wt-panel"></div>
+  </div>
+  <div class="wt-dots" id="wt-dots"></div>
+</div>
+
 <script>
 const $ = (s, r = document) => r.querySelector(s);
 const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -362,42 +396,51 @@ const picked = new Set(["base", "calr"]);
 /* ---------- FLOW ---------- */
 const COLS = { you: 70, app: 300, goo: 530 };
 const STEPS = [
-  { from: "you", to: "app", label: "1  Click the button", tag: "pub",
-    title: "You click “Continue with Google”",
-    text: "No OAuth yet. Your browser just asks the app to begin.",
+  { from: "you", to: "app", label: "1  Click the button", short: "Click", tag: "pub", who: "Visible in the browser",
+    title: "You click the button",
+    pts: ["Your browser asks the app to start login", "No OAuth yet"],
+    kv: [],
     code: "GET https://myapp.com/login" },
-  { from: "app", to: "you", label: "2  Redirect to Google", tag: "pub",
-    title: "The app sends your browser to Google",
-    text: "The app builds a URL and redirects you. <b>client_id</b> says which app is asking. <b>scope</b> says what it wants. <b>state</b> and <b>code_challenge</b> are two safety values. They get their own section near the end.",
-    code: "https://accounts.google.com/o/oauth2/v2/auth\n  ?client_id=1234-abc.apps.googleusercontent.com\n  &redirect_uri=https://myapp.com/callback\n  &response_type=code\n  &scope=openid email profile .../auth/calendar.readonly\n  &state=x7f3a9        <- random, checked in step 4\n  &code_challenge=E9Mel...  <- PKCE\n  &access_type=offline" },
-  { from: "you", to: "goo", label: "3  Log in, approve", tag: "priv",
+  { from: "app", to: "you", label: "2  Redirect to Google", short: "Redirect", tag: "pub", who: "Visible in the browser",
+    title: "The app sends you to Google",
+    pts: ["App builds a URL and redirects your browser", "Nothing secret is in it"],
+    kv: [["client_id", "Which app is asking"], ["scope", "What it wants"], ["redirect_uri", "Where to come back to"],
+         ["state", "Random. Checked in step 4"], ["code_challenge", "PKCE. Checked in step 5"]],
+    code: "https://accounts.google.com/o/oauth2/v2/auth\n  ?client_id=1234-abc.apps.googleusercontent.com\n  &redirect_uri=https://myapp.com/callback\n  &response_type=code\n  &scope=openid email profile .../auth/calendar.readonly\n  &state=x7f3a9\n  &code_challenge=E9Mel...\n  &access_type=offline" },
+  { from: "you", to: "goo", label: "3  Log in, approve", short: "Approve", tag: "priv", who: "Private: you and Google only",
     title: "You log in on Google's page",
-    text: "Already signed in? Google skips the password and just asks to continue. Then you see a consent screen listing what the app wants. Your app sees none of this.",
+    pts: ["Already signed in? Just press Continue", "Google lists what the app wants", "Your app sees none of this"],
+    kv: [],
     code: "Calendar App wants to:\n  [x] See your name, email and picture\n  [x] See your calendar events\n\n[Cancel]  [Continue]" },
-  { from: "goo", to: "app", dashed: true, label: "4  Back with a code", tag: "pub",
+  { from: "goo", to: "app", dashed: true, label: "4  Back with a code", short: "Code", tag: "pub", who: "Visible in the browser",
     title: "Google sends you back with a code",
-    text: "You said yes. Google redirects your browser to the registered redirect URI. The <b>code</b> is a short-lived, single-use ticket. It isn't the key. The app first checks that <b>state</b> matches what it saved in step 2.",
+    pts: ["Browser lands on your redirect URI", "The code is a one-time ticket, not the key", "App checks that state matches step 2"],
+    kv: [["code", "Short-lived, single use"], ["state", "Must equal the one from step 2"]],
     code: "https://myapp.com/callback\n  ?code=4/0AfJohXn...\n  &state=x7f3a9" },
-  { from: "app", to: "goo", label: "5  Swap code for tokens", tag: "priv",
+  { from: "app", to: "goo", label: "5  Swap code for tokens", short: "Swap", tag: "priv", who: "Private: server to Google",
     title: "Your backend swaps the code for tokens",
-    text: "Now your server calls Google directly. The browser isn't involved. This is the one place the <b>client secret</b> is used, and where PKCE's <b>code_verifier</b> proves it's the same app that started.",
-    code: "POST https://oauth2.googleapis.com/token\n\ngrant_type=authorization_code\ncode=4/0AfJohXn...\nclient_id=1234-abc...\nclient_secret=GOCSPX-...   <- never leaves the server\nredirect_uri=https://myapp.com/callback\ncode_verifier=dBjftJeZ..." },
-  { from: "goo", to: "app", label: "6  Tokens come back", tag: "priv",
+    pts: ["Server calls Google directly. No browser", "The client secret is used here"],
+    kv: [["code", "The ticket from step 4"], ["client_secret", "Never leaves your server"], ["code_verifier", "PKCE proof: same app that started"]],
+    code: "POST https://oauth2.googleapis.com/token\n\ngrant_type=authorization_code\ncode=4/0AfJohXn...\nclient_id=1234-abc...\nclient_secret=GOCSPX-...\nredirect_uri=https://myapp.com/callback\ncode_verifier=dBjftJeZ..." },
+  { from: "goo", to: "app", label: "6  Tokens come back", short: "Tokens", tag: "priv", who: "Private: Google to server",
     title: "Google hands over the tokens",
-    text: "Save them against this user. From here the user is logged in to your app.",
+    pts: ["Save them against this user", "The user is now logged in"],
+    kv: [["access_token", "Calls the API. Lasts about an hour"], ["refresh_token", "Gets a new access token"], ["id_token", "Says who the user is"]],
     code: "{\n  \"access_token\":  \"ya29.a0AfH6...\",\n  \"expires_in\":    3599,\n  \"refresh_token\": \"1//0gLq...\",\n  \"scope\":         \"openid ... calendar.readonly\",\n  \"token_type\":    \"Bearer\",\n  \"id_token\":      \"eyJhbGciOi...\"\n}" },
-  { from: "app", to: "goo", label: "7  Use the access token", tag: "priv",
+  { from: "app", to: "goo", label: "7  Use the access token", short: "Call API", tag: "priv", who: "Private: server to Google",
     title: "The app calls the Calendar API",
-    text: "The token goes in a header. Google (now acting as the resource server) checks it and the scopes, then returns the events.",
+    pts: ["Token goes in the Authorization header", "Google checks the token and its scopes", "The events come back"],
+    kv: [],
     code: "GET https://www.googleapis.com/calendar/v3/calendars/primary/events\nAuthorization: Bearer ya29.a0AfH6..." },
-  { from: "app", to: "goo", label: "8  An hour later: refresh", tag: "priv",
-    title: "The access token died. Use the refresh token.",
-    text: "No login screen, no user involved. The app asks for a fresh access token in the background.",
+  { from: "app", to: "goo", label: "8  An hour later: refresh", short: "Refresh", tag: "priv", who: "Private: server to Google",
+    title: "The token expired. Refresh it.",
+    pts: ["Access token is dead after about an hour", "Refresh token gets a new one", "The user sees nothing"],
+    kv: [["refresh_token", "Saved in step 6"]],
     code: "POST https://oauth2.googleapis.com/token\n\ngrant_type=refresh_token\nrefresh_token=1//0gLq...\nclient_id=1234-abc...\nclient_secret=GOCSPX-..." },
 ];
 let fi = 0;
-function drawFlow() {
-  const svg = $("#flow-svg");
+
+function drawDiagram(svg, cur) {
   svg.innerHTML = "";
   const defs = el("defs");
   [["a-on", "var(--accent2)"], ["a-past", "var(--muted)"], ["a-off", "var(--line)"]].forEach(([id, col]) => {
@@ -414,29 +457,73 @@ function drawFlow() {
   }
   STEPS.forEach((s, i) => {
     const y = 92 + i * 44;
-    const state = i === fi ? "on" : i < fi ? "past" : "off";
+    const state = i === cur ? "on" : i < cur ? "past" : "off";
     const col = state === "on" ? "var(--accent2)" : state === "past" ? "var(--muted)" : "var(--line)";
     const x1 = COLS[s.from], x2 = COLS[s.to];
-    const pad = x2 > x1 ? -6 : 6;
-    const ln = el("line", { x1, x2: x2 + pad, y1: y, y2: y, stroke: col, "stroke-width": state === "on" ? 3 : 2, "marker-end": `url(#a-${state})` });
+    const ln = el("line", { x1, x2: x2 + (x2 > x1 ? -6 : 6), y1: y, y2: y, stroke: col, "stroke-width": state === "on" ? 3 : 2, "marker-end": `url(#a-${state})` });
     if (s.dashed) ln.setAttribute("stroke-dasharray", "6 4");
     svg.appendChild(ln);
-    const t = el("text", { x: (x1 + x2) / 2, y: y - 7, "text-anchor": "middle", "font-size": 12.5,
-      fill: state === "off" ? "var(--muted)" : "var(--ink)", "font-weight": state === "on" ? 700 : 400, opacity: state === "off" ? .6 : 1 }, s.label);
-    svg.appendChild(t);
+    svg.appendChild(el("text", { x: (x1 + x2) / 2, y: y - 7, "text-anchor": "middle", "font-size": 13,
+      fill: state === "off" ? "var(--muted)" : "var(--ink)", "font-weight": state === "on" ? 700 : 400, opacity: state === "off" ? .65 : 1 }, s.label));
     const hit = el("rect", { x: 0, y: y - 24, width: 600, height: 36, fill: "transparent", style: "cursor:pointer" });
-    hit.addEventListener("click", () => { fi = i; drawFlow(); });
+    hit.addEventListener("click", () => { fi = i; drawWalk(); });
     svg.appendChild(hit);
   });
-  const s = STEPS[fi];
-  $("#flow-detail").innerHTML =
-    `<h3 class="big">Step ${fi + 1}. ${s.title}</h3>` +
-    `<span class="tag ${s.tag}">${s.tag === "pub" ? "visible in the browser" : "private"}</span>` +
-    `<p>${s.text}</p><pre class="shape">${esc(s.code)}</pre>`;
-  $("#f-count").textContent = `${fi + 1} / ${STEPS.length}`;
-  $("#f-prev").disabled = fi === 0;
-  $("#f-next").disabled = fi === STEPS.length - 1;
 }
+
+function drawWalk() {
+  const s = STEPS[fi];
+  drawDiagram($("#wt-svg"), fi);
+  $("#wt-panel").innerHTML =
+    `<div class="wt-head"><span class="num">${fi + 1}</span><h2>${s.title}</h2></div>` +
+    `<span class="tag ${s.tag}">${s.who}</span>` +
+    `<div class="lab">What happens</div><ul class="pts">${s.pts.map(p => `<li>${p}</li>`).join("")}</ul>` +
+    (s.kv.length ? `<div class="lab">Key parts</div><div class="kv">${s.kv.map(([k, v]) => `<code>${k}</code><span>${v}</span>`).join("")}</div>` : "") +
+    `<div class="lab">What's sent</div><pre class="shape">${esc(s.code)}</pre>`;
+  $("#wt-count").textContent = `${fi + 1} / ${STEPS.length}`;
+  $("#wt-prev").disabled = fi === 0;
+  $("#wt-next").disabled = fi === STEPS.length - 1;
+  [...$("#wt-dots").children].forEach((b, i) => b.classList.toggle("on", i === fi));
+}
+
+(function () {
+  const wt = $("#wt");
+  STEPS.forEach((s, i) => {
+    const d = document.createElement("button");
+    d.className = "tab"; d.textContent = `${i + 1} ${s.short}`;
+    d.onclick = () => { fi = i; drawWalk(); };
+    $("#wt-dots").appendChild(d);
+    const p = document.createElement("button");
+    p.className = "tab"; p.textContent = `${i + 1} ${s.short}`;
+    p.onclick = () => openWalk(i);
+    $("#wt-pills").appendChild(p);
+  });
+  window.openWalk = function (i) {
+    if (i != null) fi = i;
+    wt.hidden = false;
+    document.body.style.overflow = "hidden";
+    drawWalk();
+    $("#wt-next").focus();
+  };
+  function closeWalk() {
+    wt.hidden = true;
+    document.body.style.overflow = "";
+    $("#wt-open").focus();
+  }
+  $("#wt-open").onclick = () => openWalk();
+  $("#wt-close").onclick = closeWalk;
+  $("#wt-prev").onclick = () => { if (fi > 0) { fi--; drawWalk(); } };
+  $("#wt-next").onclick = () => { if (fi < STEPS.length - 1) { fi++; drawWalk(); } };
+  document.addEventListener("keydown", e => {
+    if (wt.hidden) return;
+    if (e.key === "Escape") closeWalk();
+    else if (e.key === "ArrowRight") $("#wt-next").click();
+    else if (e.key === "ArrowLeft") $("#wt-prev").click();
+  });
+  const m = location.hash.match(/^#walkthrough(?:-(\d))?$/);   // deep link: #walkthrough or #walkthrough-4
+  if (m) openWalk(m[1] ? Math.min(+m[1], STEPS.length) - 1 : 0);
+})();
+
 // Keep whatever just changed fully on screen, so nobody has to hunt for it.
 function keepVisible(e) {
   requestAnimationFrame(() => {
@@ -445,9 +532,6 @@ function keepVisible(e) {
       e.scrollIntoView({ block: r.height > innerHeight ? "start" : "nearest", behavior: "smooth" });
   });
 }
-$("#f-prev").onclick = () => { if (fi > 0) { fi--; drawFlow(); keepVisible($("#flow")); } };
-$("#f-next").onclick = () => { if (fi < STEPS.length - 1) { fi++; drawFlow(); keepVisible($("#flow")); } };
-drawFlow();
 
 /* ---------- JWT ---------- */
 const b64u = o => btoa(JSON.stringify(o)).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");

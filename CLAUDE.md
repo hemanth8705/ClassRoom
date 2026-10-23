@@ -19,6 +19,12 @@ If a click, toggle or slider changes something on the page, the result must appe
 - Keep each interactive block short enough to fit in one viewport (about 600px tall on a laptop).
 - Check this by clicking every control once and asking: did I have to scroll to see what happened?
 
+### Use the whole screen, and use points
+- A step-through (flow, sequence, wizard) opens as a full-screen widget: diagram on one side, details on the other, a step bar at the bottom. Don't squeeze it into a narrow card inside the article.
+- Explain each step as structure, not a paragraph: a short title, a "who can see it" tag, 2-3 bullet points of about 8 words each, a small "key parts" list (name, meaning), then the raw example.
+- Support `←` `→` and `Esc`, and a `#name-N` link so a step can be opened directly.
+- Look at the real render (headless browser screenshot) before calling it done.
+
 ### Code snippets are Python only
 Every code snippet on a page is Python. Use Flask and `requests` for backend examples. Raw HTTP messages and JSON payloads (a protocol, not code) are fine as they are. Do not add JavaScript, Node, or other languages to the visible examples. The page's own scripting is still JS.
 
