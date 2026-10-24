@@ -1,0 +1,37 @@
+---
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import { allSeries, inSeries, href } from '../../data/articles';
+---
+<Base title="Articles" description="Written pieces and interactive explainers, grouped by series.">
+  <div class="container">
+    <header class="page-head">
+      <div><span class="eyebrow">Articles</span></div>
+      <h1 class="display" style="margin-top:18px">Read it, then <em>click it.</em></h1>
+      <p class="lead">Every piece has something you can poke at. Grouped by series, in reading order.</p>
+    </header>
+
+    {allSeries.map((s) => (
+      <section style="margin-top:56px">
+        <div class="section-head">
+          <h2 class="display" style="font-size:2rem;display:flex;align-items:center;gap:14px">
+            <span class="ico-tile"><Icon name={s.icon} /></span>{s.title}
+          </h2>
+          <a href={`/articles/${s.slug}`}>Series page →</a>
+        </div>
+        <ol class="rows">
+          {inSeries(s.slug).map((a) => (
+            <li>
+              <a class="row-a" href={href(a)}>
+                <span class="n">{String(a.n).padStart(2, '0')}</span>
+                <span class="t">{a.title}</span>
+                <span class="go"><Icon name="arrowRight" /></span>
+                <span class="d">{a.desc}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))}
+  </div>
+</Base>

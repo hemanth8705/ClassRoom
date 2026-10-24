@@ -1,0 +1,684 @@
+<style>
+h2.part { font-size: 1.6rem; margin: 48px 0 0; padding-top: 24px; border-top: 2px solid var(--line); }
+.launch { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 14px 0; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+button.btn.big { font-size: 1.05rem; padding: 10px 20px; }
+.wt { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column; }
+.wt[hidden] { display: none; }
+.wt-top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+            padding: 12px 24px; border-bottom: 1px solid var(--line); background: var(--card); }
+.wt-title { font-weight: 700; font-size: 1.15rem; }
+.wt-nav { display: flex; gap: 10px; align-items: center; }
+.wt-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; padding: 16px 28px; }
+.wt-left { min-height: 0; display: flex; align-items: center; }
+.wt-left svg { width: 100%; height: 100%; }
+.wt-right { min-height: 0; overflow: auto; padding-right: 4px; }
+.wt-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.wt-head h2 { margin: 0; font-size: 1.6rem; }
+.wt-head .num { flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff;
+                  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem; }
+.wt .lab { margin: 18px 0 6px; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+ul.pts { margin: 0; padding-left: 1.2em; font-size: 1.1rem; line-height: 1.5; }
+ul.pts li { margin: 4px 0; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; align-items: baseline; }
+.kv span { color: var(--ink); }
+.wt pre.shape { margin: 0; font-size: .9rem; }
+.wt-dots { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 12px 24px; border-top: 1px solid var(--line); background: var(--card); }
+@media (max-width: 800px) {
+    .wt-body { grid-template-columns: 1fr; grid-template-rows: 40% 1fr; padding: 12px 16px; gap: 12px; }
+    .wt-top { padding: 10px 16px; }
+  }
+.empty { color: var(--muted); font-style: italic; }
+h2 { font-size: 1.35rem; margin: 0 0 8px; }
+h3 { font-size: 1.02rem; margin: 18px 0 6px; }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin: 20px 0; }
+.step { display: inline-block; background: var(--accent2); color: #fff; border-radius: 999px;
+          font-size: .78rem; font-weight: 600; padding: 2px 10px; margin-bottom: 6px; }
+code, .mono { font-family: ui-monospace, Consolas, monospace; background: var(--code);
+                padding: 1px 6px; border-radius: 4px; font-size: .9em; }
+pre.shape { font-family: ui-monospace, Consolas, monospace; background: var(--code); border-radius: 8px;
+              padding: 12px 14px; margin: 10px 0; overflow-x: auto; font-size: .85rem; line-height: 1.55; white-space: pre; }
+.callout { border-left: 4px solid var(--accent); background: var(--code); padding: 10px 14px;
+             border-radius: 0 8px 8px 0; margin: 14px 0; }
+.callout.blue { border-left-color: var(--accent2); }
+.note { color: var(--muted); font-size: .88rem; }
+.row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.grow { flex: 1; min-width: 260px; }
+button.btn { font: inherit; background: var(--accent2); color: #fff; border: 0; border-radius: 8px; padding: 6px 14px; cursor: pointer; }
+button.btn.alt { background: var(--code); color: var(--ink); border: 1px solid var(--line); }
+button.btn:disabled { opacity: .4; cursor: default; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+.tab { font: inherit; font-size: .88rem; background: var(--code); color: var(--ink); border: 1px solid var(--line);
+         border-radius: 999px; padding: 3px 14px; cursor: pointer; }
+.tab.on { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+.tag { display: inline-block; font-size: .78rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; }
+.tag.pub { background: #fff1e6; color: #b34700; }
+.tag.priv { background: #e6f6ea; color: #1f6b30; }
+svg text { font-family: system-ui, sans-serif; }
+.consent { border: 1px solid var(--line); border-radius: 12px; padding: 16px; background: var(--bg); min-width: 260px; }
+.consent .who { font-weight: 600; margin-bottom: 4px; }
+.consent ul { list-style: none; padding: 0; margin: 10px 0; }
+.consent li { padding: 6px 0; border-top: 1px solid var(--line); display: flex; gap: 8px; align-items: center; }
+.consent li:first-child { border-top: 0; }
+.badge { margin-left: auto; font-size: .72rem; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.badge.sens { color: #b34700; border-color: #b34700; }
+.badge.rest { color: var(--bad); border-color: var(--bad); }
+.picks label { display: flex; gap: 8px; align-items: center; margin: 6px 0; cursor: pointer; }
+.flowbox { display: flex; gap: 8px; align-items: center; margin: 10px 0; flex-wrap: wrap; }
+.big { font-size: 1.05rem; }
+.jwt { font-family: ui-monospace, Consolas, monospace; font-size: .8rem; word-break: break-all; line-height: 1.6; }
+.jwt .h { color: #e03131; }
+.jwt .p { color: #7048e8; }
+.jwt .s { color: #0c8599; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--code); }
+.scroll { overflow-x: auto; }
+.result { padding: 10px 14px; border-radius: 8px; margin-top: 10px; font-size: .92rem; display: none; }
+.result.ok { display: block; background: #e6f6ea; color: #1f6b30; }
+.result.fail { display: block; background: #fdeaea; color: #a61e1e; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 620px) { .two { grid-template-columns: 1fr; } }
+.card { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--bg); }
+.card h3 { margin-top: 0; }
+ol.plain { padding-left: 1.3em; }
+ol.plain li { margin: 6px 0; }
+</style>
+<div class="frag-main">
+
+<!-- ================= PROBLEM ================= -->
+<section id="problem">
+  <span class="step">THE PROBLEM</span>
+  <h2>Every app wants a password. That's a bad deal.</h2>
+  <p>Say you build a calendar app. Users sign up, so you store a password for each one. Now you own a database people want to steal. Users reuse that password everywhere. You also need reset emails, lockouts and breach notices.</p>
+  <p>Google already did all of that, better than you will. So skip it. Ask Google: <b>"is this person real? Vouch for them."</b></p>
+  <p>That's OAuth. You hand the login job to a company the user already trusts. The user signs in on <b>Google's</b> page. Your app only gets a token that says "Google checked this person, and they allowed you to see X."</p>
+
+  <div class="callout blue">
+    <b>Think hotel keycard.</b> You don't give a guest your house key. The front desk prints a card that opens room 204 only, and dies at checkout. In OAuth, Google is the front desk. The access token is the keycard.
+  </div>
+</section>
+
+<!-- ================= PLAYERS ================= -->
+<section id="players">
+  <span class="step">THE CAST</span>
+  <h2>Four names you'll keep seeing</h2>
+  <p>Click each one.</p>
+  <div class="row">
+    <div class="grow">
+      <svg viewBox="0 0 400 250" width="100%" role="img" aria-label="Four roles in OAuth">
+        <g id="cast"></g>
+      </svg>
+    </div>
+    <div class="grow card" id="cast-info" style="min-height:120px"></div>
+  </div>
+</section>
+
+<!-- ================= FLOW ================= -->
+<section id="flow">
+  <span class="step">THE FLOW</span>
+  <h2>Eight steps, start to finish</h2>
+  <p>This is the "Authorization Code" flow. It's the one you should use. The walkthrough opens full screen, so you see the whole picture at once.</p>
+  <div class="launch">
+    <button class="btn big" id="wt-open"><svg class="ico"><use href="#i-play"/></svg> Open the 8-step walkthrough</button>
+    <div class="pills" id="wt-pills"></div>
+  </div>
+  <div class="callout blue">
+    <b>Why a code first, then a token?</b> The code travels through the browser, where anyone looking can see it. So it's worth nothing alone. The real tokens only come back on a private server-to-server call that needs your client secret. The walkthrough tags every step <span class="tag pub">visible</span> or <span class="tag priv">private</span>.
+  </div>
+</section>
+
+<!-- ================= TOKENS ================= -->
+<section id="tokens">
+  <span class="step">WHAT YOU GET BACK</span>
+  <h2>Three tokens, three jobs</h2>
+  <div class="scroll">
+  <table>
+    <tr><th></th><th>Access token</th><th>Refresh token</th><th>ID token</th></tr>
+    <tr><th>Job</th><td>Call Google's APIs for the user</td><td>Get a new access token</td><td>Tell your app who just logged in</td></tr>
+    <tr><th>Lives</th><td>About an hour (<code>expires_in: 3599</code>)</td><td>Until the user revokes it</td><td>About an hour</td></tr>
+    <tr><th>Sent to</th><td>Google's API, in a header</td><td>Google's token endpoint only</td><td>Read by your backend only</td></tr>
+    <tr><th>If stolen</th><td>Attacker has access until it expires</td><td>Attacker keeps getting new ones. Guard it.</td><td>Not a key. Don't use it to call APIs.</td></tr>
+  </table>
+  </div>
+  <p class="note">You only get a refresh token if you ask with <code>access_type=offline</code>. Google sends it on the first consent. Adding <code>prompt=consent</code> makes it come back on every login.</p>
+
+  <h3>Open an ID token</h3>
+  <p>The ID token is a JWT: three chunks joined by dots. The middle chunk is just JSON in disguise (base64). Press the button.</p>
+  <div id="jwt-demo">
+    <div class="row">
+      <div class="grow">
+        <div class="jwt card" id="jwt-view"></div>
+        <div class="flowbox"><button class="btn" id="jwt-btn">Decode the middle part</button></div>
+      </div>
+      <div class="grow">
+        <pre class="shape" id="jwt-json"><span class="empty">Press the button. The decoded middle part shows up here.</span></pre>
+      </div>
+    </div>
+
+    <h3>Why the last chunk matters</h3>
+    <p>The third chunk is Google's signature. Edit the email, then check. Your backend would compare the signature against Google's public keys and reject a changed token.</p>
+    <div class="row">
+      <div class="grow">
+        <div class="flowbox">
+          <label>email: <input id="jwt-email" size="24" value="asha@example.com" style="font:inherit;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></label>
+          <button class="btn alt" id="jwt-check">Check signature</button>
+        </div>
+      </div>
+      <div class="grow"><div class="result" id="jwt-res"></div></div>
+    </div>
+  </div>
+  <p class="note">This check is simulated here. In real code, use your Google client library to verify an ID token. Don't write the signature math yourself.</p>
+</section>
+
+<h2 class="part">Now let’s build it</h2>
+
+<!-- ================= SETUP ================= -->
+<section id="setup">
+  <span class="step">BUILD · 1 OF 2</span>
+  <h2>Register your app with Google</h2>
+  <p>Google has to know your app exists. In <b>Google Cloud Console › APIs &amp; Services › Credentials</b>, create an <b>OAuth client ID</b> (type: Web application). You get two things back:</p>
+  <div class="two">
+    <div class="card"><h3>Client ID</h3><p>Your app's public name. It goes in the login URL. Everyone can see it. That's fine.</p></div>
+    <div class="card"><h3>Client secret</h3><p>Your app's password. It stays on your server. It never goes in a URL, in the browser, or in Git.</p></div>
+  </div>
+  <p>You also register a <b>redirect URI</b>, like <code>http://localhost:3000/callback</code>. It's the only address Google will send users back to. If it doesn't match exactly, Google refuses. This stops anyone from redirecting your users' codes to their own site.</p>
+
+  <h3>Scopes: what you're asking for</h3>
+  <p>Your app asks for scopes in the login URL. Each scope is one permission. Pick some and watch the screen your user will see.</p>
+  <div class="row">
+    <div class="grow picks" id="picks"></div>
+    <div class="grow">
+      <div class="consent" id="consent"></div>
+      <p class="note" style="margin:10px 0 0">The <code>scope</code> value that goes in the URL:</p>
+      <pre class="shape" id="scope-out" style="white-space:pre-wrap;word-break:break-all"></pre>
+    </div>
+  </div>
+  <div class="callout">Ask for the least you need. A name-and-email screen gets clicked through. A "delete your Drive files" screen gets closed. Google also reviews apps that ask for sensitive or restricted scopes before the public can use them. While testing, add your own account as a test user.</div>
+</section>
+
+<!-- ================= CODE ================= -->
+<section id="code">
+  <span class="step">BUILD · 2 OF 2</span>
+  <h2>The code: Python + Flask</h2>
+  <p>Needs Python 3.9+. Install once, then run with your two values from the Cloud Console:</p>
+  <pre class="shape">pip install flask requests
+
+# macOS / Linux
+CLIENT_ID=xxx CLIENT_SECRET=yyy python server.py
+# Windows PowerShell
+$env:CLIENT_ID="xxx"; $env:CLIENT_SECRET="yyy"; python server.py</pre>
+  <p>One file, four pieces. Click through them in order. Put them all in <code>server.py</code>.</p>
+  <div class="tabs" id="code-tabs"></div>
+  <p class="note" id="code-why" style="margin:8px 0 0"></p>
+  <pre class="shape" id="code-view" style="min-height:120px;max-height:70vh;overflow:auto"></pre>
+  <div class="flowbox"><button class="btn alt" id="code-copy">Copy this piece</button></div>
+  <div class="callout">
+    <b>Not production yet.</b> The server-side store here is a plain dict, so a restart logs everyone out. In a real app use Redis or a database, encrypt the refresh token at rest, set <code>SESSION_COOKIE_SECURE</code> and <code>SESSION_COOKIE_HTTPONLY</code>, and serve over HTTPS.
+  </div>
+</section>
+
+<!-- ================= ATTACKS ================= -->
+<section id="attacks">
+  <span class="step">WHAT CAN GO WRONG</span>
+  <h2>Two small lines of code that stop two real attacks</h2>
+  <p>You saw <code>state</code> and <code>code_challenge</code> in the URL. Toggle the defence, then run the attack.</p>
+
+  <div class="two">
+    <div class="card">
+      <h3>1. Fake callback link</h3>
+      <p>An attacker logs in with their own Google account, grabs the callback link with their code, and sends it to you. You click it.</p>
+      <label><input type="checkbox" id="a1-on" checked> App checks <code>state</code></label><br><br>
+      <button class="btn" id="a1-run">Run attack</button>
+      <div class="result" id="a1-res"></div>
+    </div>
+    <div class="card">
+      <h3>2. Stolen code</h3>
+      <p>A malicious browser extension or a leaked log copies the <code>code</code> from the URL, then races your app to Google.</p>
+      <label><input type="checkbox" id="a2-on" checked> App uses PKCE</label><br><br>
+      <button class="btn" id="a2-run">Run attack</button>
+      <div class="result" id="a2-res"></div>
+    </div>
+  </div>
+  <p class="note">How they work. <code>state</code>: your app invents a random value, stores it, and checks Google returns the same one. <b>PKCE</b>: your app invents a secret (<code>code_verifier</code>), sends only its hash (<code>code_challenge</code>) at the start, and reveals the secret at the token swap. Whoever started the login is the only one who can finish it.</p>
+</section>
+
+<!-- ================= AUTHN vs AUTHZ ================= -->
+<section id="difference">
+  <span class="step">ONE LAST THING</span>
+  <h2>Authentication vs authorization</h2>
+  <p>People mix these up. OAuth is the second one. Mostly.</p>
+  <div class="two">
+    <div class="card"><h3><span class="ico-tile"><svg class="ico"><use href="#i-id"/></svg></span>Authentication</h3><p><b>Who are you?</b> Like showing your passport at the hotel desk.</p><p class="note">In our flow: the <b>ID token</b>. This part is called OpenID Connect (OIDC), a thin layer on top of OAuth. It's what <code>openid email profile</code> turned on.</p></div>
+    <div class="card"><h3><span class="ico-tile"><svg class="ico"><use href="#i-key"/></svg></span>Authorization</h3><p><b>What may you touch?</b> Like a keycard that only opens room 204.</p><p class="note">In our flow: the <b>access token</b> and its scopes. This is OAuth itself.</p></div>
+  </div>
+  <p>"Continue with Google" does both at once. You prove who you are, and you decide what the app can do on your behalf.</p>
+</section>
+
+<!-- ================= TAKEAWAYS ================= -->
+<section id="takeaways">
+  <span class="step">KEEP THESE</span>
+  <h2>Checklist before you ship</h2>
+  <ol class="plain">
+    <li>Client secret lives on the server. Nowhere else.</li>
+    <li>Register the redirect URI exactly. No wildcards.</li>
+    <li>Always send and check <code>state</code>. Always use PKCE.</li>
+    <li>Ask for the smallest scopes that work.</li>
+    <li>Treat the refresh token like a password. Encrypt it at rest.</li>
+    <li>Never use an ID token to call an API. Never use an access token to identify a user.</li>
+    <li>Let a library verify ID tokens.</li>
+  </ol>
+</section>
+
+</div>
+<div id="wt" class="wt" hidden role="dialog" aria-modal="true" aria-label="OAuth flow walkthrough">
+  <div class="wt-top">
+    <div class="wt-title">Authorization Code flow <span class="note">· 8 steps · arrow keys to move</span></div>
+    <div class="wt-nav">
+      <button class="btn alt" id="wt-prev"><svg class="ico"><use href="#i-arrowLeft"/></svg> Back</button>
+      <span id="wt-count" class="note"></span>
+      <button class="btn" id="wt-next">Next <svg class="ico"><use href="#i-arrowRight"/></svg></button>
+      <button class="btn alt" id="wt-close" aria-label="Close walkthrough"><svg class="ico"><use href="#i-close"/></svg> Close</button>
+    </div>
+  </div>
+  <div class="wt-body">
+    <div class="wt-left"><svg id="wt-svg" viewBox="0 0 600 450" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Sequence of OAuth messages"></svg></div>
+    <div class="wt-right" id="wt-panel"></div>
+  </div>
+  <div class="wt-dots" id="wt-dots"></div>
+</div>
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const NS = "http://www.w3.org/2000/svg";
+const I = n => `<svg class="ico"><use href="#i-${n}"/></svg>`;
+function el(name, attrs = {}, text) {
+  const e = document.createElementNS(NS, name);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function iconUse(name, x, y, size) {
+  return el("use", { href: "#i-" + name, x, y, width: size, height: size, fill: "none", stroke: "var(--icon)",
+    "stroke-width": 1.6, "stroke-linecap": "round", "stroke-linejoin": "round" });
+}
+
+/* ---------- CAST ---------- */
+const CAST = [
+  { id: "owner",  icon: "user", name: "Resource owner", x: 20,  y: 20,  who: "You, the user.", text: "The data is yours, so you decide who gets it." },
+  { id: "client", icon: "calendar", name: "Client",         x: 210, y: 20,  who: "The calendar app you're building.", text: "It wants access to your stuff. Confusing name: here “client” means the app, not you." },
+  { id: "auth",   icon: "shield", name: "Auth server",    x: 20,  y: 140, who: "Google's login and consent service.", text: "Checks who you are, asks what you allow, and prints tokens." },
+  { id: "res",    icon: "database", name: "Resource server",x: 210, y: 140, who: "Google Calendar's API.", text: "Holds the actual data. Opens only for a valid access token." },
+];
+(function () {
+  const g = $("#cast");
+  CAST.forEach(c => {
+    const grp = el("g", { style: "cursor:pointer", "data-id": c.id });
+    grp.appendChild(el("rect", { x: c.x, y: c.y, width: 170, height: 95, rx: 12, fill: "var(--code)", stroke: "var(--line)", "stroke-width": 2, class: "castbox" }));
+    grp.appendChild(iconUse(c.icon, c.x + 85 - 17, c.y + 14, 34));
+    grp.appendChild(el("text", { x: c.x + 85, y: c.y + 72, "text-anchor": "middle", "font-size": 14, fill: "var(--ink)", "font-weight": 600 }, c.name));
+    grp.addEventListener("click", () => show(c.id));
+    g.appendChild(grp);
+  });
+  function show(id) {
+    const c = CAST.find(x => x.id === id);
+    document.querySelectorAll(".castbox").forEach(r => r.setAttribute("stroke", "var(--line)"));
+    document.querySelector(`[data-id="${id}"] .castbox`).setAttribute("stroke", "var(--accent)");
+    $("#cast-info").innerHTML = `<h3><span class="ico-tile">${I(c.icon)}</span>${c.name}<p><b>${c.who}</b></p><p>${c.text}</p>`;
+  }
+  show("client");
+})();
+
+/* ---------- SCOPES / CONSENT ---------- */
+const SCOPES = [
+  { key: "base",  label: "Name, email, profile picture", url: "openid email profile", human: "See your name, email and profile picture", risk: "", fixed: true },
+  { key: "calr",  label: "Read calendar",                url: "https://www.googleapis.com/auth/calendar.readonly", human: "See your calendar events", risk: "sens" },
+  { key: "drr",   label: "Read Drive files",             url: "https://www.googleapis.com/auth/drive.readonly",    human: "See and download your Drive files", risk: "rest" },
+  { key: "drw",   label: "Edit Drive files",             url: "https://www.googleapis.com/auth/drive",             human: "See, edit, create and delete all your Drive files", risk: "rest" },
+];
+const picked = new Set(["base", "calr"]);
+(function () {
+  const box = $("#picks");
+  SCOPES.forEach(s => {
+    const l = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = picked.has(s.key); cb.disabled = !!s.fixed;
+    cb.addEventListener("change", () => { cb.checked ? picked.add(s.key) : picked.delete(s.key); draw(); });
+    l.append(cb, document.createTextNode(s.label));
+    box.appendChild(l);
+  });
+  function draw() {
+    const on = SCOPES.filter(s => picked.has(s.key));
+    const riskLabel = { sens: "sensitive", rest: "restricted" };
+    $("#consent").innerHTML =
+      `<div class="who">${I("calendar")} Calendar App wants to access your Google Account</div>` +
+      `<div class="note">asha@example.com</div><ul>` +
+      on.map(s => `<li><span style="color:var(--good)">${I("check")}</span> ${s.human}${s.risk ? `<span class="badge ${s.risk}">${riskLabel[s.risk]}</span>` : ""}</li>`).join("") +
+      `</ul><div class="flowbox"><button class="btn alt" disabled>Cancel</button><button class="btn" disabled>Continue</button></div>`;
+    $("#scope-out").textContent = "scope=" + on.map(s => s.url).join(" ");
+  }
+  draw();
+})();
+
+/* ---------- FLOW ---------- */
+const COLS = { you: 70, app: 300, goo: 530 };
+const STEPS = [
+  { from: "you", to: "app", label: "1  Click the button", short: "Click", tag: "pub", who: "Visible in the browser",
+    title: "You click the button",
+    pts: ["Your browser asks the app to start login", "No OAuth yet"],
+    kv: [],
+    code: "GET https://myapp.com/login" },
+  { from: "app", to: "you", label: "2  Redirect to Google", short: "Redirect", tag: "pub", who: "Visible in the browser",
+    title: "The app sends you to Google",
+    pts: ["App builds a URL and redirects your browser", "Nothing secret is in it"],
+    kv: [["client_id", "Which app is asking"], ["scope", "What it wants"], ["redirect_uri", "Where to come back to"],
+         ["state", "Random. Checked in step 4"], ["code_challenge", "PKCE. Checked in step 5"]],
+    code: "https://accounts.google.com/o/oauth2/v2/auth\n  ?client_id=1234-abc.apps.googleusercontent.com\n  &redirect_uri=https://myapp.com/callback\n  &response_type=code\n  &scope=openid email profile .../auth/calendar.readonly\n  &state=x7f3a9\n  &code_challenge=E9Mel...\n  &access_type=offline" },
+  { from: "you", to: "goo", label: "3  Log in, approve", short: "Approve", tag: "priv", who: "Private: you and Google only",
+    title: "You log in on Google's page",
+    pts: ["Already signed in? Just press Continue", "Google lists what the app wants", "Your app sees none of this"],
+    kv: [],
+    code: "Calendar App wants to:\n  [x] See your name, email and picture\n  [x] See your calendar events\n\n[Cancel]  [Continue]" },
+  { from: "goo", to: "app", dashed: true, label: "4  Back with a code", short: "Code", tag: "pub", who: "Visible in the browser",
+    title: "Google sends you back with a code",
+    pts: ["Browser lands on your redirect URI", "The code is a one-time ticket, not the key", "App checks that state matches step 2"],
+    kv: [["code", "Short-lived, single use"], ["state", "Must equal the one from step 2"]],
+    code: "https://myapp.com/callback\n  ?code=4/0AfJohXn...\n  &state=x7f3a9" },
+  { from: "app", to: "goo", label: "5  Swap code for tokens", short: "Swap", tag: "priv", who: "Private: server to Google",
+    title: "Your backend swaps the code for tokens",
+    pts: ["Server calls Google directly. No browser", "The client secret is used here"],
+    kv: [["code", "The ticket from step 4"], ["client_secret", "Never leaves your server"], ["code_verifier", "PKCE proof: same app that started"]],
+    code: "POST https://oauth2.googleapis.com/token\n\ngrant_type=authorization_code\ncode=4/0AfJohXn...\nclient_id=1234-abc...\nclient_secret=GOCSPX-...\nredirect_uri=https://myapp.com/callback\ncode_verifier=dBjftJeZ..." },
+  { from: "goo", to: "app", label: "6  Tokens come back", short: "Tokens", tag: "priv", who: "Private: Google to server",
+    title: "Google hands over the tokens",
+    pts: ["Save them against this user", "The user is now logged in"],
+    kv: [["access_token", "Calls the API. Lasts about an hour"], ["refresh_token", "Gets a new access token"], ["id_token", "Says who the user is"]],
+    code: "{\n  \"access_token\":  \"ya29.a0AfH6...\",\n  \"expires_in\":    3599,\n  \"refresh_token\": \"1//0gLq...\",\n  \"scope\":         \"openid ... calendar.readonly\",\n  \"token_type\":    \"Bearer\",\n  \"id_token\":      \"eyJhbGciOi...\"\n}" },
+  { from: "app", to: "goo", label: "7  Use the access token", short: "Call API", tag: "priv", who: "Private: server to Google",
+    title: "The app calls the Calendar API",
+    pts: ["Token goes in the Authorization header", "Google checks the token and its scopes", "The events come back"],
+    kv: [],
+    code: "GET https://www.googleapis.com/calendar/v3/calendars/primary/events\nAuthorization: Bearer ya29.a0AfH6..." },
+  { from: "app", to: "goo", label: "8  An hour later: refresh", short: "Refresh", tag: "priv", who: "Private: server to Google",
+    title: "The token expired. Refresh it.",
+    pts: ["Access token is dead after about an hour", "Refresh token gets a new one", "The user sees nothing"],
+    kv: [["refresh_token", "Saved in step 6"]],
+    code: "POST https://oauth2.googleapis.com/token\n\ngrant_type=refresh_token\nrefresh_token=1//0gLq...\nclient_id=1234-abc...\nclient_secret=GOCSPX-..." },
+];
+let fi = 0;
+
+function drawDiagram(svg, cur) {
+  svg.innerHTML = "";
+  const defs = el("defs");
+  [["a-on", "var(--accent)"], ["a-past", "var(--muted)"], ["a-off", "var(--line)"]].forEach(([id, col]) => {
+    const m = el("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" });
+    m.appendChild(el("path", { d: "M0,0 L10,5 L0,10 z", fill: col }));
+    defs.appendChild(m);
+  });
+  svg.appendChild(defs);
+  const names = { you: ["user", "You (browser)"], app: ["calendar", "Your app (server)"], goo: ["shield", "Google"] };
+  for (const k in COLS) {
+    svg.appendChild(iconUse(names[k][0], COLS[k] - 14, 6, 28));
+    svg.appendChild(el("text", { x: COLS[k], y: 48, "text-anchor": "middle", "font-size": 13, fill: "var(--ink)", "font-weight": 600 }, names[k][1]));
+    svg.appendChild(el("line", { x1: COLS[k], x2: COLS[k], y1: 58, y2: 445, stroke: "var(--line)", "stroke-width": 2, "stroke-dasharray": "4 4" }));
+  }
+  STEPS.forEach((s, i) => {
+    const y = 92 + i * 44;
+    const state = i === cur ? "on" : i < cur ? "past" : "off";
+    const col = state === "on" ? "var(--accent)" : state === "past" ? "var(--muted)" : "var(--line)";
+    const x1 = COLS[s.from], x2 = COLS[s.to];
+    const ln = el("line", { x1, x2: x2 + (x2 > x1 ? -6 : 6), y1: y, y2: y, stroke: col, "stroke-width": state === "on" ? 3 : 2, "marker-end": `url(#a-${state})` });
+    if (s.dashed) ln.setAttribute("stroke-dasharray", "6 4");
+    svg.appendChild(ln);
+    svg.appendChild(el("text", { x: (x1 + x2) / 2, y: y - 7, "text-anchor": "middle", "font-size": 13,
+      fill: state === "off" ? "var(--muted)" : "var(--ink)", "font-weight": state === "on" ? 700 : 400, opacity: state === "off" ? .65 : 1 }, s.label));
+    const hit = el("rect", { x: 0, y: y - 24, width: 600, height: 36, fill: "transparent", style: "cursor:pointer" });
+    hit.addEventListener("click", () => { fi = i; drawWalk(); });
+    svg.appendChild(hit);
+  });
+}
+
+function drawWalk() {
+  const s = STEPS[fi];
+  drawDiagram($("#wt-svg"), fi);
+  $("#wt-panel").innerHTML =
+    `<div class="wt-head"><span class="num">${fi + 1}</span><h2>${s.title}</h2></div>` +
+    `<span class="tag ${s.tag}">${s.who}</span>` +
+    `<div class="lab">What happens</div><ul class="pts">${s.pts.map(p => `<li>${p}</li>`).join("")}</ul>` +
+    (s.kv.length ? `<div class="lab">Key parts</div><div class="kv">${s.kv.map(([k, v]) => `<code>${k}</code><span>${v}</span>`).join("")}</div>` : "") +
+    `<div class="lab">What's sent</div><pre class="shape">${esc(s.code)}</pre>`;
+  $("#wt-count").textContent = `${fi + 1} / ${STEPS.length}`;
+  $("#wt-prev").disabled = fi === 0;
+  $("#wt-next").disabled = fi === STEPS.length - 1;
+  [...$("#wt-dots").children].forEach((b, i) => b.classList.toggle("on", i === fi));
+}
+
+(function () {
+  const wt = $("#wt");
+  STEPS.forEach((s, i) => {
+    const d = document.createElement("button");
+    d.className = "tab"; d.textContent = `${i + 1} ${s.short}`;
+    d.onclick = () => { fi = i; drawWalk(); };
+    $("#wt-dots").appendChild(d);
+    const p = document.createElement("button");
+    p.className = "tab"; p.textContent = `${i + 1} ${s.short}`;
+    p.onclick = () => openWalk(i);
+    $("#wt-pills").appendChild(p);
+  });
+  window.openWalk = function (i) {
+    if (i != null) fi = i;
+    wt.hidden = false;
+    document.body.style.overflow = "hidden";
+    drawWalk();
+    $("#wt-next").focus();
+  };
+  function closeWalk() {
+    wt.hidden = true;
+    document.body.style.overflow = "";
+    $("#wt-open").focus();
+  }
+  $("#wt-open").onclick = () => openWalk();
+  $("#wt-close").onclick = closeWalk;
+  $("#wt-prev").onclick = () => { if (fi > 0) { fi--; drawWalk(); } };
+  $("#wt-next").onclick = () => { if (fi < STEPS.length - 1) { fi++; drawWalk(); } };
+  document.addEventListener("keydown", e => {
+    if (wt.hidden) return;
+    if (e.key === "Escape") closeWalk();
+    else if (e.key === "ArrowRight") $("#wt-next").click();
+    else if (e.key === "ArrowLeft") $("#wt-prev").click();
+  });
+  const m = location.hash.match(/^#walkthrough(?:-(\d))?$/);   // deep link: #walkthrough or #walkthrough-4
+  if (m) openWalk(m[1] ? Math.min(+m[1], STEPS.length) - 1 : 0);
+})();
+
+// Keep whatever just changed fully on screen, so nobody has to hunt for it.
+function keepVisible(e) {
+  requestAnimationFrame(() => {
+    const r = e.getBoundingClientRect();
+    if (r.top < 0 || r.bottom > innerHeight)
+      e.scrollIntoView({ block: r.height > innerHeight ? "start" : "nearest", behavior: "smooth" });
+  });
+}
+
+/* ---------- JWT ---------- */
+const b64u = o => btoa(JSON.stringify(o)).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
+const JWT_PAYLOAD = {
+  iss: "https://accounts.google.com", aud: "1234-abc.apps.googleusercontent.com",
+  sub: "110169484474386276334", email: "asha@example.com", name: "Asha Rao",
+  iat: 1790000000, exp: 1790003600,
+};
+const JWT_HEAD = { alg: "RS256", typ: "JWT" };
+const JWT_SIG = "kQ3xV8mT0pLw2dYhR9aZ";
+$("#jwt-view").innerHTML =
+  `<span class="h">${b64u(JWT_HEAD)}</span>.<span class="p">${b64u(JWT_PAYLOAD)}</span>.<span class="s">${JWT_SIG}...</span>`;
+$("#jwt-btn").onclick = () => {
+  const pre = $("#jwt-json");
+  pre.textContent = JSON.stringify(JWT_PAYLOAD, null, 2) +
+    "\n\n// iss: who issued it   aud: which app it's for\n// sub: the user's permanent Google ID (use this, not email, as your key)\n// exp: expiry time";
+  keepVisible($("#jwt-demo"));
+};
+$("#jwt-check").onclick = () => {
+  const r = $("#jwt-res");
+  const same = $("#jwt-email").value === JWT_PAYLOAD.email;
+  r.className = "result " + (same ? "ok" : "fail");
+  r.textContent = same
+    ? "Signature matches. The token is exactly what Google issued."
+    : "Signature does not match. The payload changed after Google signed it. Reject this token.";
+  keepVisible($("#jwt-demo"));
+};
+
+/* ---------- CODE ---------- */
+const PIECES = [
+  { name: "1 Setup", why: "Imports, keys, and a server-side store. The browser only ever holds a random session id.",
+    code: `import os, time, secrets, hashlib, base64
+from urllib.parse import urlencode
+
+import requests
+from flask import Flask, redirect, request, session
+
+CLIENT_ID = os.environ["CLIENT_ID"]          # from your environment, never hard-coded
+CLIENT_SECRET = os.environ["CLIENT_SECRET"]
+REDIRECT = "http://localhost:3000/callback"  # must match the Cloud Console exactly
+AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+TOKEN_URL = "https://oauth2.googleapis.com/token"
+
+app = Flask(__name__)
+app.secret_key = "change-me"                 # signs the session cookie
+
+STORE = {}  # session id -> {state, verifier, tokens}. Redis or a DB in real life.
+
+def me():
+    # The cookie holds only a random id. Secrets stay on the server.
+    if "sid" not in session:
+        session["sid"] = secrets.token_hex(16)
+    return STORE.setdefault(session["sid"], {})
+
+def b64url(raw: bytes) -> str:
+    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
+
+@app.route("/")
+def home():
+    return '<a href="/login">Continue with Google</a>'` },
+  { name: "2 /login", why: "Steps 1-2: make the state and PKCE values, then send the user to Google.",
+    code: `@app.route("/login")
+def login():
+    s = me()
+    s["state"] = secrets.token_urlsafe(16)       # anti fake-callback
+    s["verifier"] = secrets.token_urlsafe(32)    # PKCE secret, never sent now
+    challenge = b64url(hashlib.sha256(s["verifier"].encode()).digest())  # its hash, safe to send
+
+    params = {
+        "client_id": CLIENT_ID,
+        "redirect_uri": REDIRECT,
+        "response_type": "code",
+        "scope": "openid email profile https://www.googleapis.com/auth/calendar.readonly",
+        "state": s["state"],
+        "code_challenge": challenge,
+        "code_challenge_method": "S256",
+        "access_type": "offline",                # gives us a refresh token
+        "prompt": "consent",
+    }
+    return redirect(AUTH_URL + "?" + urlencode(params))` },
+  { name: "3 /callback", why: "Steps 4-6: check state, swap the code for tokens, save them.",
+    code: `@app.route("/callback")
+def callback():
+    s = me()
+    if "error" in request.args:                  # user clicked Cancel
+        return "Login cancelled", 400
+
+    state = s.pop("state", None)                 # one use only
+    if not state or request.args.get("state") != state:
+        return "Bad state", 400                  # fake-callback check
+
+    r = requests.post(TOKEN_URL, data={
+        "grant_type": "authorization_code",
+        "code": request.args["code"],
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,          # server-only
+        "redirect_uri": REDIRECT,
+        "code_verifier": s.pop("verifier", ""),  # proves we started this login
+    })
+    if not r.ok:
+        return r.json(), 400
+
+    t = r.json()
+    s["tokens"] = {
+        "access_token": t["access_token"],
+        "refresh_token": t.get("refresh_token"),
+        "expires_at": time.time() + t["expires_in"],
+    }
+    return redirect("/events")` },
+  { name: "4 /events + refresh", why: "Steps 7-8: call the API, and refresh quietly once the token has expired.",
+    code: `def fresh_token(s):
+    t = s["tokens"]
+    if time.time() < t["expires_at"] - 60:       # still valid for a minute+
+        return t["access_token"]
+
+    r = requests.post(TOKEN_URL, data={
+        "grant_type": "refresh_token",
+        "refresh_token": t["refresh_token"],
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+    })
+    new = r.json()
+    t["access_token"] = new["access_token"]      # Google keeps the same refresh token
+    t["expires_at"] = time.time() + new["expires_in"]
+    return t["access_token"]
+
+@app.route("/events")
+def events():
+    s = me()
+    if "tokens" not in s:
+        return redirect("/login")
+    r = requests.get(
+        "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+        headers={"Authorization": f"Bearer {fresh_token(s)}"},
+        params={"maxResults": 5},
+    )
+    return {"events": [e.get("summary") for e in r.json().get("items", [])]}
+
+if __name__ == "__main__":
+    app.run(port=3000)` },
+];
+let ci = 0;
+(function () {
+  const tabs = $("#code-tabs");
+  PIECES.forEach((p, i) => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.textContent = p.name;
+    b.onclick = () => { ci = i; draw(); keepVisible($("#code")); };
+    tabs.appendChild(b);
+  });
+  function draw() {
+    [...tabs.children].forEach((b, i) => b.classList.toggle("on", i === ci));
+    $("#code-view").textContent = PIECES[ci].code;
+    $("#code-why").textContent = PIECES[ci].why;
+  }
+  window.drawCode = draw;
+  draw();
+})();
+$("#code-copy").onclick = async () => {
+  const b = $("#code-copy");
+  try { await navigator.clipboard.writeText(PIECES[ci].code); b.textContent = "Copied"; }
+  catch (e) { b.textContent = "Select and copy manually"; }
+  setTimeout(() => b.textContent = "Copy this piece", 1400);
+};
+
+/* ---------- ATTACKS ---------- */
+function runAttack(onId, resId, safe, unsafe) {
+  $(resId.btn).onclick = () => {
+    const r = $(resId.res);
+    const defended = $(onId).checked;
+    r.className = "result " + (defended ? "ok" : "fail");
+    r.innerHTML = defended ? safe : unsafe;
+    keepVisible($("#attacks"));
+  };
+}
+runAttack("#a1-on", { btn: "#a1-run", res: "#a1-res" },
+  "<b>Blocked.</b> The callback carries a <code>state</code> your app never issued to this browser. The app rejects it with \"Bad state\".",
+  "<b>Attack works.</b> Your app swaps the attacker's code and ties <i>their</i> Google account to <i>your</i> session. Anything you save next goes to the attacker's account.");
+runAttack("#a2-on", { btn: "#a2-run", res: "#a2-res" },
+  "<b>Blocked.</b> The thief has the code but not the <code>code_verifier</code>. Google compares its hash with the <code>code_challenge</code> from step 2 and refuses.",
+  "<b>Attack works (for apps without a client secret).</b> Nothing ties the code to the app that asked, so whoever reaches Google first gets the tokens. A server-side secret helps, but use PKCE anyway.");
+</script>

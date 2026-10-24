@@ -1,0 +1,84 @@
+/*
+  Design tokens. Three themes, one set of names.
+  Every page, icon and diagram reads colour from these variables, never from a hex value.
+  Swap the theme with <html data-theme="obsidian | midnight | paper">.
+*/
+:root,
+:root[data-theme="obsidian"] {
+  color-scheme: dark;
+  --bg: #09090b;
+  --bg-2: #0d0d10;
+  --card: #111114;
+  --card-2: #17171b;
+  --ink: #ececea;
+  --ink-2: #b4b4ae;
+  --muted: #81818a;
+  --line: #1e1e24;
+  --line-2: #2c2c34;
+  --accent: #e3b866;          /* signature: warm gold */
+  --accent-soft: rgba(227, 184, 102, .10);
+  --accent2: #8aa9ff;         /* cool counterpart for diagrams */
+  --code: #14141a;
+  --good: #6fcf97;  --good-soft: rgba(111, 207, 151, .12);
+  --bad: #ff7b72;   --bad-soft: rgba(255, 123, 114, .12);
+  --warn: #e3b866;  --warn-soft: rgba(227, 184, 102, .12);
+  --glow: rgba(227, 184, 102, .08);
+  --icon: #e3b866;
+  --icon-tile: rgba(227, 184, 102, .07);
+  --shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 18px 50px -20px rgba(0, 0, 0, .6);
+}
+
+:root[data-theme="midnight"] {
+  color-scheme: dark;
+  --bg: #060911;
+  --bg-2: #0a0e1a;
+  --card: #0d1220;
+  --card-2: #131a2c;
+  --ink: #e7ecf8;
+  --ink-2: #aab4cc;
+  --muted: #7683a0;
+  --line: #172036;
+  --line-2: #243050;
+  --accent: #7fa6ff;
+  --accent-soft: rgba(127, 166, 255, .11);
+  --accent2: #e3b866;
+  --code: #0b1020;
+  --good: #66d9b0;  --good-soft: rgba(102, 217, 176, .12);
+  --bad: #ff8b8b;   --bad-soft: rgba(255, 139, 139, .12);
+  --warn: #f0c27a;  --warn-soft: rgba(240, 194, 122, .12);
+  --glow: rgba(127, 166, 255, .10);
+  --icon: #7fa6ff;
+  --icon-tile: rgba(127, 166, 255, .08);
+  --shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 18px 50px -20px rgba(0, 0, 0, .7);
+}
+
+:root[data-theme="paper"] {
+  color-scheme: light;
+  --bg: #f6f4ef;
+  --bg-2: #efece4;
+  --card: #fffdf9;
+  --card-2: #f8f5ee;
+  --ink: #17171a;
+  --ink-2: #46453f;
+  --muted: #78756d;
+  --line: #e6e1d5;
+  --line-2: #d6d0c1;
+  --accent: #8a5a12;
+  --accent-soft: rgba(138, 90, 18, .09);
+  --accent2: #2b4fb5;
+  --code: #f1ede3;
+  --good: #1f7a45;  --good-soft: rgba(31, 122, 69, .10);
+  --bad: #b42318;   --bad-soft: rgba(180, 35, 24, .09);
+  --warn: #8a5a12;  --warn-soft: rgba(138, 90, 18, .10);
+  --glow: rgba(138, 90, 18, .07);
+  --icon: #8a5a12;
+  --icon-tile: rgba(138, 90, 18, .08);
+  --shadow: 0 1px 0 rgba(255, 255, 255, .8) inset, 0 14px 40px -22px rgba(60, 45, 20, .35);
+}
+
+:root {
+  --serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono Variable", ui-monospace, "Cascadia Code", Consolas, monospace;
+  --radius: 14px;
+}

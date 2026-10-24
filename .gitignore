@@ -168,7 +168,7 @@ venv.bak/
 .ropeproject
 
 # mkdocs documentation
-/site
+# (site/ is the live website and is tracked; its own .gitignore covers node_modules, dist)
 
 # mypy
 .mypy_cache/

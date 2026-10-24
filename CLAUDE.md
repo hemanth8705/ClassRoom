@@ -1,5 +1,15 @@
 # ClassRoom
 
+## The website (`site/`)
+Astro static site, deployed on Vercel from this repo (Vercel project Root Directory = `site`, framework Astro).
+- Live article pages: `site/src/articles/*.html` (fragments: style + markup + script). Register each one in `site/src/data/articles.ts`.
+- `authentication/` and `text-to-image/` hold the original standalone pages and the markdown source (`1_text-to-image.md` is read by the site). The HTML copies in `site/src/articles/` are what gets published; edit those.
+- Design system: `site/src/styles/theme.css` (3 themes: obsidian, midnight, paper), `base.css` (site chrome), `article.css` (skin for article bodies). Live reference at `/design`.
+- Colours come from CSS variables only. No hex values in new article code. Swap `--accent`/`--accent2` roles are already mapped.
+- Icons: custom SVG set in `site/src/components/Sprite.astro`, used as `<svg class="ico"><use href="#i-name"/></svg>`. **No emoji anywhere.** Add new icons to the sprite, same 24px grid and 1.6 stroke.
+- Look: dark, minimal, editorial. Instrument Serif for headlines, Inter for body, JetBrains Mono for labels and code. One accent colour. Hairline borders, no heavy shadows, no gradients except the soft top glow.
+- Check any change in a real render (`npm run build`, then a headless screenshot) in at least two themes.
+
 Backend engineering articles, written as single-file interactive HTML pages. Two folders:
 
 - `authentication/` — OAuth and auth articles

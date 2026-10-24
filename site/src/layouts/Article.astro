@@ -1,0 +1,28 @@
+---
+import Base from './Base.astro';
+import Icon from '../components/Icon.astro';
+import { articles, inSeries, seriesOf, href } from '../data/articles';
+
+const { article } = Astro.props;
+const s = seriesOf(article.series);
+const list = inSeries(article.series);
+const i = list.findIndex((a) => a.slug === article.slug);
+const prev = list[i - 1], next = list[i + 1];
+---
+<Base title={article.short} description={article.desc}>
+  <article class="article">
+    <header class="container a-hero">
+      <a class="crumb" href={`/articles/${s.slug}`}><Icon name="arrowLeft" /> {s.title}</a>
+      <div><span class="eyebrow">Part {article.n} of {list.length} · {article.kind === 'interactive' ? 'Interactive' : 'Article'}</span></div>
+      <h1>{article.title}</h1>
+      <p class="a-desc">{article.desc}</p>
+    </header>
+
+    <div class="a-body"><slot /></div>
+
+    <nav class="container a-pn" aria-label="More in this series">
+      {prev ? <a class="prev" href={href(prev)}><small>Previous</small><span>{prev.short}</span></a> : <span />}
+      {next ? <a class="next" href={href(next)}><small>Next</small><span>{next.short}</span></a> : <span />}
+    </nav>
+  </article>
+</Base>

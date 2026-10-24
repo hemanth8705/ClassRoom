@@ -1,0 +1,25 @@
+---
+import { getCollection, render } from 'astro:content';
+import Article from '../../../layouts/Article.astro';
+import { articles } from '../../../data/articles';
+
+// Interactive articles live as HTML fragments in src/articles/. They are read as raw text
+// and written into the page as-is, so their scripts run exactly as authored.
+const fragments = import.meta.glob('../../../articles/*.html', { query: '?raw', import: 'default', eager: true });
+
+export async function getStaticPaths() {
+  const docs = await getCollection('docs');
+  return articles.map((article) => ({
+    params: { series: article.series, slug: article.slug },
+    props: { article, md: docs.find((d) => d.id === article.file) },
+  }));
+}
+
+const { article, md } = Astro.props;
+const html = article.source === 'html' ? (fragments[`../../../articles/${article.file}`] as string) : null;
+const Content = article.source === 'md' && md ? (await render(md)).Content : null;
+---
+<Article article={article}>
+  {html && <div class="frag" set:html={html} />}
+  {Content && <div class="prose"><Content /></div>}
+</Article>

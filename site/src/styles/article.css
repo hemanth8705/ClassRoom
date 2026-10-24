@@ -1,0 +1,121 @@
+/*
+  Skin for interactive article bodies.
+  The article fragments keep their own small layout rules; everything visual
+  (colour, type, borders, buttons) is overridden here, scoped to .article so
+  the older rules lose on specificity.
+*/
+.article .a-body { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+.article .a-body .frag { max-width: none; }
+
+.article section {
+  background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+  padding: clamp(22px, 3.2vw, 38px); margin: 20px 0; box-shadow: var(--shadow); position: relative;
+}
+.article section h2 { font: 400 clamp(1.7rem, 3vw, 2.35rem)/1.12 var(--serif); letter-spacing: -.012em; margin: 14px 0 14px; color: var(--ink); }
+.article h2.part { font: 400 clamp(2rem, 4vw, 3rem)/1.05 var(--serif); letter-spacing: -.015em; margin: 72px 0 8px; padding-top: 28px; border-top: 1px solid var(--line); color: var(--ink); }
+.article h3 { font: 600 .95rem/1.3 var(--sans); letter-spacing: 0; color: var(--ink); margin: 26px 0 8px; }
+.article p { color: var(--ink-2); }
+.article section > p, .article section .card p { font-size: 1rem; line-height: 1.75; }
+.article b, .article strong { color: var(--ink); font-weight: 600; }
+.article .note, .article .chiplabel { color: var(--muted); font-size: .84rem; }
+
+.article .step {
+  display: inline-flex; align-items: center; gap: 12px; background: none; color: var(--accent); padding: 0; border-radius: 0; margin: 0;
+  font: 500 .7rem/1 var(--mono); letter-spacing: .16em; text-transform: uppercase;
+}
+.article .step::before { content: ""; width: 24px; height: 1px; background: currentColor; }
+
+.article code, .article .mono { font: 400 .84em var(--mono); background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; color: var(--ink); }
+.article .shape, .article pre.shape {
+  font-family: var(--mono); font-size: .82rem; line-height: 1.65; color: var(--ink-2);
+  background: var(--code); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px;
+}
+.article .shape code, .article pre code { background: none; border: 0; padding: 0; }
+.article .shape b { color: var(--accent); }
+
+.article .callout {
+  background: var(--card-2); border: 1px solid var(--line); border-left: 2px solid var(--accent);
+  border-radius: 4px 12px 12px 4px; padding: 14px 18px; margin: 22px 0; color: var(--ink-2);
+}
+.article .callout.blue { border-left-color: var(--accent2); }
+
+/* buttons: solid ink, quiet ghost */
+.article button { font-family: var(--sans); }
+.article button.btn, .article .row button:not(.chip):not(.tab):not(.sb), .article .controls button {
+  background: var(--ink); color: var(--bg); border: 1px solid var(--ink); border-radius: 10px;
+  padding: 9px 16px; font: 500 .88rem/1 var(--sans); cursor: pointer; transition: transform .15s, border-color .15s, background .15s;
+}
+.article button.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.article button.btn.alt, .article button.alt { background: transparent; color: var(--ink); border: 1px solid var(--line-2); }
+.article button.btn.alt:hover:not(:disabled), .article button.alt:hover:not(:disabled) { border-color: var(--accent); }
+.article button:disabled { opacity: .35; cursor: default; }
+.article button.btn.big { font-size: .95rem; padding: 14px 22px; }
+
+/* chips and tabs: mono pills */
+.article .chip, .article .tab {
+  font: 500 .76rem/1 var(--mono); letter-spacing: .02em; color: var(--ink-2); background: transparent;
+  border: 1px solid var(--line-2); border-radius: 999px; padding: 8px 14px; cursor: pointer; transition: border-color .15s, color .15s, background .15s;
+}
+.article .chip:hover, .article .tab:hover { border-color: var(--accent); color: var(--ink); }
+.article .chip.on, .article .tab.on { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+
+/* tags */
+.article .tag { font: 500 .68rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; border: 1px solid transparent; display: inline-block; }
+.article .tag.pub  { background: var(--warn-soft); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+.article .tag.priv { background: var(--good-soft); color: var(--good); border-color: color-mix(in srgb, var(--good) 30%, transparent); }
+
+/* cards, results, tables */
+.article .card { background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+.article .card h3 { margin-top: 0; }
+.article .result.ok   { background: var(--good-soft); color: var(--good); border: 1px solid color-mix(in srgb, var(--good) 28%, transparent); }
+.article .result.fail { background: var(--bad-soft);  color: var(--bad);  border: 1px solid color-mix(in srgb, var(--bad) 28%, transparent); }
+.article .result { border-radius: 12px; }
+.article table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.article table th, .article table td { border: 1px solid var(--line); padding: 10px 14px; text-align: left; vertical-align: top; color: var(--ink-2); }
+.article table th { background: var(--card-2); color: var(--ink); font-weight: 600; }
+.article table.vec { width: auto; }
+.article table.vec td, .article table.vec th { padding: 3px 8px; }
+.article table.vec th { background: var(--card-2); }
+.article table.vec tr.sel td, .article table.vec tr.sel th { outline: 2px solid var(--accent); }
+
+/* form controls */
+.article input[type=text], .article input:not([type]), .article input[type=number], .article select {
+  font: 400 .9rem var(--sans); background: var(--code); color: var(--ink); border: 1px solid var(--line-2); border-radius: 8px; padding: 8px 12px;
+}
+.article input[type=range] { accent-color: var(--accent); }
+.article input[type=checkbox] { accent-color: var(--accent); }
+.article label { color: var(--ink-2); }
+.article .sliders label, .article .controls label { color: var(--muted); }
+.article .tcell, .article .tok { color: #111; }       /* cells sit on pastel data colours, keep dark text */
+
+/* diagrams */
+.article svg text { font-family: var(--sans); }
+.article svg.ico text { display: none; }
+.article .legend, .article .cap { color: var(--muted); }
+.article canvas { border-radius: 10px; border: 1px solid var(--line); }
+
+/* oauth page pieces */
+.article .consent { background: var(--card-2); border: 1px solid var(--line-2); border-radius: 16px; padding: 18px 20px; }
+.article .consent li { border-top: 1px solid var(--line); }
+.article .badge { border: 1px solid var(--line-2); color: var(--muted); font: 500 .66rem var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.article .badge.sens { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+.article .badge.rest { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+.article .jwt .h { color: var(--bad); } .article .jwt .p { color: var(--accent); } .article .jwt .s { color: var(--accent2); }
+.article .kv code { white-space: nowrap; }
+
+/* full-screen walkthrough */
+.article .wt { background: var(--bg); z-index: 60; }
+.article .wt-top, .article .wt-dots { background: color-mix(in srgb, var(--bg) 88%, var(--card)); border-color: var(--line); }
+.article .wt-head .num { background: var(--accent); color: var(--bg); font-family: var(--mono); }
+.article .wt-head h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: clamp(1.7rem, 2.6vw, 2.4rem); }
+.article .wt .lab { color: var(--muted); font-family: var(--mono); }
+.article ul.pts { color: var(--ink); }
+.article ul.pts li::marker { color: var(--accent); }
+.article .pills { gap: 8px; }
+
+/* ico tiles inside articles */
+.article .ico-tile { width: 36px; height: 36px; border-radius: 10px; }
+.article .two .card h3 { display: flex; align-items: center; gap: 12px; }
+
+.article button.btn, .article button.alt { display: inline-flex; align-items: center; gap: 8px; }
+.article .launch { gap: 16px; }

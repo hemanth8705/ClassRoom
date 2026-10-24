@@ -1,0 +1,47 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import { site } from '../data/site';
+import { allSeries, articles, inSeries, href } from '../data/articles';
+
+const first = articles[0];
+---
+<Base>
+  <div class="container">
+    <section class="hero">
+      <span class="eyebrow">Backend engineering, explained</span>
+      <h1 class="display" style="margin-top:26px">Systems, made clear <em>by things you can click.</em></h1>
+      <p class="lead">{site.description} Short, plain, and every page has something to try.</p>
+      <div class="cta">
+        <a class="btn-s" href={href(first)}>Start with OAuth <Icon name="arrowRight" /></a>
+        <a class="btn-s ghost" href="/articles">All articles</a>
+      </div>
+    </section>
+
+    <div class="section-head"><span class="eyebrow">Series</span><a href="/articles">Browse all →</a></div>
+    <div class="cards">
+      {allSeries.map((s) => (
+        <a class="scard" href={`/articles/${s.slug}`}>
+          <span class="ico-tile"><Icon name={s.icon} /></span>
+          <h3>{s.title}</h3>
+          <p>{s.blurb}</p>
+          <span class="meta"><span>{inSeries(s.slug).length} {inSeries(s.slug).length === 1 ? 'part' : 'parts'}</span><Icon name="arrowRight" /></span>
+        </a>
+      ))}
+    </div>
+
+    <div class="section-head" style="margin-top:72px"><span class="eyebrow">Latest</span></div>
+    <ol class="rows">
+      {articles.filter((a) => a.kind === 'interactive').map((a, i) => (
+        <li>
+          <a class="row-a" href={href(a)}>
+            <span class="n">{String(i + 1).padStart(2, '0')}</span>
+            <span class="t">{a.title}</span>
+            <span class="go"><Icon name="arrowRight" /></span>
+            <span class="d">{a.desc}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </div>
+</Base>

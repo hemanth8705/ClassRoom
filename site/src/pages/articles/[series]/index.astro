@@ -1,0 +1,33 @@
+---
+import Base from '../../../layouts/Base.astro';
+import Icon from '../../../components/Icon.astro';
+import { allSeries, inSeries, href } from '../../../data/articles';
+
+export function getStaticPaths() {
+  return allSeries.map((series) => ({ params: { series: series.slug }, props: { series } }));
+}
+const { series } = Astro.props;
+const list = inSeries(series.slug);
+---
+<Base title={series.title} description={series.blurb}>
+  <div class="container">
+    <header class="page-head">
+      <a class="crumb" href="/articles"><Icon name="arrowLeft" /> All articles</a>
+      <div><span class="eyebrow">Series · {list.length} {list.length === 1 ? 'part' : 'parts'}</span></div>
+      <h1 class="display" style="margin-top:18px">{series.title}</h1>
+      <p class="lead">{series.blurb}</p>
+    </header>
+    <ol class="rows">
+      {list.map((a) => (
+        <li>
+          <a class="row-a" href={href(a)}>
+            <span class="n">{String(a.n).padStart(2, '0')}</span>
+            <span class="t">{a.title}</span>
+            <span class="go"><Icon name="arrowRight" /></span>
+            <span class="d">{a.desc}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </div>
+</Base>
