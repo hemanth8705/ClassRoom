@@ -119,3 +119,6 @@
 
 .article button.btn, .article button.alt { display: inline-flex; align-items: center; gap: 8px; }
 .article .launch { gap: 16px; }
+
+/* black and white: failure is told apart by a dashed outline, not a colour */
+.article .result.fail { border-style: dashed; }

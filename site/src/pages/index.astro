@@ -1,21 +1,14 @@
 ---
 import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
-import { site } from '../data/site';
 import { allSeries, articles, inSeries, href } from '../data/articles';
 
-const first = articles[0];
 ---
 <Base>
   <div class="container">
     <section class="hero">
       <span class="eyebrow">Backend engineering, explained</span>
-      <h1 class="display" style="margin-top:26px">Systems, made clear <em>by things you can click.</em></h1>
-      <p class="lead">{site.description} Short, plain, and every page has something to try.</p>
-      <div class="cta">
-        <a class="btn-s" href={href(first)}>Start with OAuth <Icon name="arrowRight" /></a>
-        <a class="btn-s ghost" href="/articles">All articles</a>
-      </div>
+      <h1 class="display" style="margin-top:26px">Systems, made clear.</h1>
     </section>
 
     <div class="section-head"><span class="eyebrow">Series</span><a href="/articles">Browse all →</a></div>

@@ -31,20 +31,12 @@ header.site {
 }
 header.site .in { display: flex; align-items: center; gap: 28px; height: 64px; }
 .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; margin-right: auto; }
-.brand .mark { width: 30px; height: 30px; border: 1px solid var(--line-2); border-radius: 9px; display: grid; place-items: center;
-  font: 400 1.05rem/1 var(--serif); color: var(--accent); background: var(--accent-soft); font-style: italic; }
+.brand .mark { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line-2); filter: grayscale(1); }
 .brand .name { font: 400 1.3rem/1 var(--serif); letter-spacing: .005em; }
 nav.main { display: flex; gap: 6px; }
 nav.main a { color: var(--muted); text-decoration: none; font-size: .88rem; padding: 7px 12px; border-radius: 8px; transition: color .15s, background .15s; }
 nav.main a:hover { color: var(--ink); background: var(--card-2); }
 nav.main a.on { color: var(--ink); }
-.themes { display: flex; gap: 6px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); }
-.themes button {
-  width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line-2); padding: 0; cursor: pointer;
-  background: linear-gradient(135deg, var(--sw-bg) 50%, var(--sw-ac) 50%); transition: transform .15s;
-}
-.themes button:hover { transform: scale(1.12); }
-.themes button[aria-pressed="true"] { outline: 2px solid var(--ink); outline-offset: 2px; }
 @media (max-width: 640px) { header.site .in { gap: 10px; } .brand .name { display: none; } nav.main a { padding: 7px 8px; } }
 
 /* ---------- footer ---------- */

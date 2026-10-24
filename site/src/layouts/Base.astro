@@ -7,7 +7,7 @@ import '../styles/theme.css';
 import '../styles/base.css';
 import '../styles/article.css';
 import Sprite from '../components/Sprite.astro';
-import { site, themes } from '../data/site';
+import { site } from '../data/site';
 
 const { title, description = site.description } = Astro.props;
 const fullTitle = title ? `${title} · ${site.name}` : `${site.name} · ${site.tagline}`;
@@ -19,37 +19,27 @@ const nav = [
 ];
 ---
 <!doctype html>
-<html lang="en" data-theme="obsidian">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{fullTitle}</title>
   <meta name="description" content={description} />
-  <meta name="theme-color" content="#09090b" />
+  <meta name="theme-color" content="#000000" />
   <meta property="og:title" content={fullTitle} />
   <meta property="og:description" content={description} />
-  <script is:inline>
-    // Set the theme before first paint so there is no flash.
-    try { var q = new URLSearchParams(location.search).get('theme'); document.documentElement.dataset.theme = q || localStorage.getItem('theme') || 'obsidian'; } catch (e) {}
-  </script>
-</head>
+  </head>
 <body>
   <Sprite />
   <header class="site">
     <div class="container in">
       <a class="brand" href="/" aria-label={`${site.name}, home`}>
-        <span class="mark">{site.monogram}</span>
+        <img class="mark" src="/avatar.png" alt="" width="32" height="32" />
         <span class="name">{site.name}</span>
       </a>
       <nav class="main" aria-label="Main">
         {nav.map(([href, label]) => <a href={href} class={path.startsWith(href) ? 'on' : ''}>{label}</a>)}
       </nav>
-      <div class="themes" role="group" aria-label="Theme">
-        {themes.map((t) => (
-          <button type="button" data-theme-set={t.id} title={t.label} aria-label={`${t.label} theme`} aria-pressed="false"
-            style={`--sw-bg:${t.bg};--sw-ac:${t.ac}`}></button>
-        ))}
-      </div>
     </div>
   </header>
 
@@ -62,22 +52,5 @@ const nav = [
     </div>
   </footer>
 
-  <script is:inline>
-    (function () {
-      var btns = document.querySelectorAll('[data-theme-set]');
-      function mark() {
-        var t = document.documentElement.dataset.theme;
-        btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.themeSet === t)); });
-      }
-      btns.forEach(function (b) {
-        b.addEventListener('click', function () {
-          document.documentElement.dataset.theme = b.dataset.themeSet;
-          try { localStorage.setItem('theme', b.dataset.themeSet); } catch (e) {}
-          mark();
-        });
-      });
-      mark();
-    })();
-  </script>
 </body>
 </html>

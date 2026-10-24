@@ -2,30 +2,21 @@
 import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
 import { icons } from '../components/Sprite.astro';
-import { themes } from '../data/site';
 
 const tokens = [
   ['bg', 'Page'], ['card', 'Surface'], ['card-2', 'Raised'], ['line', 'Hairline'], ['ink', 'Text'],
-  ['muted', 'Muted'], ['accent', 'Accent'], ['accent2', 'Counter'], ['good', 'Private'], ['warn', 'Visible'], ['bad', 'Risk'],
+  ['muted', 'Muted'], ['accent2', 'Secondary'],
 ];
 ---
 <Base title="Design" description="The palette, type, icons and components this site is built from.">
   <div class="container">
     <header class="page-head">
       <div><span class="eyebrow">Design system</span></div>
-      <h1 class="display" style="margin-top:18px">Quiet, dark, <em>precise.</em></h1>
-      <p class="lead">Everything on this site is built from the tokens below. Switch the theme in the header and every swatch, icon and component changes with it.</p>
+      <h1 class="display" style="margin-top:18px">Black, white, <em>precise.</em></h1>
+      <p class="lead">Everything on this site is built from the tokens below. Pure black and white, no colour, so the type and the content carry the page.</p>
     </header>
 
     <div class="spec">
-      <div class="block">
-        <h3>Themes</h3>
-        <div class="swatches">
-          {themes.map((t) => (
-            <div class="sw"><i style={`background:linear-gradient(135deg, ${t.bg} 50%, ${t.ac} 50%)`}></i><b>{t.label}</b><span>{t.bg} · {t.ac}</span></div>
-          ))}
-        </div>
-      </div>
 
       <div class="block">
         <h3>Colour tokens (live)</h3>
@@ -45,7 +36,7 @@ const tokens = [
 
       <div class="block">
         <h3>Icons</h3>
-        <p style="color:var(--muted);margin:0 0 18px;font-size:.92rem">One 24px grid, 1.6px stroke, round caps. Always <code>currentColor</code>, so the theme owns the colour. No emoji anywhere.</p>
+        <p style="color:var(--muted);margin:0 0 18px;font-size:.92rem">One 24px grid, 1.6px stroke, round caps. Always <code>currentColor</code>. No emoji anywhere.</p>
         <div class="icon-grid">
           {Object.keys(icons).map((n) => (
             <div class="icon-cell"><span class="ico-tile"><Icon name={n} /></span>{n}</div>
