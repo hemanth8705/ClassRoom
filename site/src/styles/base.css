@@ -142,3 +142,14 @@ svg.ico { width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; strok
 .spec h3 { font: 500 .72rem/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 0 18px; }
 .type-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .type-row small { font: 400 .72rem var(--mono); color: var(--muted); }
+
+/* ---------- glossary terms ---------- */
+.term { text-decoration: underline dotted; text-decoration-color: var(--muted); text-decoration-thickness: 1px; text-underline-offset: 4px; cursor: help; border-radius: 3px; transition: text-decoration-color .15s, background .15s; }
+.term:hover, .term:focus-visible { text-decoration-color: var(--ink); background: var(--accent-soft); }
+.term-pop { position: fixed; z-index: 90; width: min(340px, calc(100vw - 24px)); padding: 16px 18px; background: var(--card-2); border: 1px solid var(--line-2); border-radius: 14px;
+  box-shadow: 0 24px 60px -16px rgba(0, 0, 0, .9); font: 400 .88rem/1.6 var(--sans); color: var(--ink-2); text-align: left; }
+.term-pop[hidden] { display: none; }
+.term-pop b { display: block; margin-bottom: 6px; font: 500 .72rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); }
+.term-pop p { margin: 0 0 12px; }
+.term-pop a { display: inline-flex; align-items: center; gap: 6px; font: 500 .76rem var(--mono); color: var(--ink); text-decoration: none; padding: 6px 10px; border: 1px solid var(--line-2); border-radius: 8px; }
+.term-pop a:hover { border-color: var(--ink); }

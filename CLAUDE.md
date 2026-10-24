@@ -29,6 +29,7 @@ If a click, toggle or slider changes something on the page, the result must appe
 - Check this by clicking every control once and asking: did I have to scroll to see what happened?
 
 ### Use the whole screen, and use points
+- In the article, a step-through shows as a small live preview of the widget with a Maximize button. Clicking it opens the full-screen version.
 - A step-through (flow, sequence, wizard) opens as a full-screen widget: diagram on one side, details on the other, a step bar at the bottom. Don't squeeze it into a narrow card inside the article.
 - Explain each step as structure, not a paragraph: a short title, a "who can see it" tag, 2-3 bullet points of about 8 words each, a small "key parts" list (name, meaning), then the raw example.
 - Support `←` `→` and `Esc`, and a `#name-N` link so a step can be opened directly.
@@ -38,19 +39,12 @@ If a click, toggle or slider changes something on the page, the result must appe
 Every code snippet on a page is Python. Use Flask and `requests` for backend examples. Raw HTTP messages and JSON payloads (a protocol, not code) are fine as they are. Do not add JavaScript, Node, or other languages to the visible examples. The page's own scripting is still JS.
 
 ### Voice
-Write like a person explaining something to a colleague.
-
-- Short, plain sentences. As few words as possible, and every line has to earn its place.
-- Open with the concrete thing (the problem, an example, a number), then explain.
-- No filler headings like "What this is about" or "Table of contents". Start with the point.
-- No AI-sounding phrases ("game-changer", "in today's landscape", "let's dive in").
-- Write for a non-technical reader who is also a developer: jargon gets one plain-English sentence the first time it appears.
-- Don't invent facts. Endpoints, scope names and limits must match the provider's docs.
+Read `.claude/skills/classroom-writing/SKILL.md` before writing or editing any article copy. In one line: every sentence sounds like a person teaching you, with a scenario first, who-does-what, and a reason for everything. It also defines the hover-glossary for unfamiliar terms (dotted underline, a dialog that stays open, and an "Explain X" Google link).
 
 ### Structure
 - Explain the idea first (problem, players, flow), then the implementation (setup, code). Don't mix them.
 - Put interactive demos where they teach something: flows as step-through diagrams, tokens as decodable examples, risks as toggle-and-run demos.
-- Support light and dark mode, and a phone-width layout.
+- The site is black and white only. Make every page work at phone width too.
 
 ## Git
 - Never commit or push unless the user asks. They push themselves.

@@ -52,5 +52,54 @@ const nav = [
     </div>
   </footer>
 
+
+  <script is:inline>
+    // Hover (or focus, or tap) a .term to read its definition. The box stays open while you read it.
+    // Definitions live in window.GLOSSARY, filled in by each article: { key: { t, d, q } }.
+    (function () {
+      var pop = document.createElement('div');
+      pop.className = 'term-pop'; pop.hidden = true; pop.setAttribute('role', 'dialog');
+      document.body.appendChild(pop);
+      var timer = null, current = null;
+
+      function place(el) {
+        var r = el.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+        var x = Math.min(Math.max(12, r.left), window.innerWidth - w - 12);
+        var y = r.bottom + 8;
+        if (y + h > window.innerHeight - 12) y = Math.max(12, r.top - h - 8);
+        pop.style.left = x + 'px'; pop.style.top = y + 'px';
+      }
+      function show(el) {
+        var g = (window.GLOSSARY || {})[el.getAttribute('data-term')];
+        if (!g) return;
+        clearTimeout(timer); current = el;
+        pop.innerHTML = '<b></b><p></p><a target="_blank" rel="noopener"></a>';
+        pop.firstChild.textContent = g.t;
+        pop.children[1].textContent = g.d;
+        var a = pop.children[2];
+        a.href = 'https://www.google.com/search?q=' + encodeURIComponent(g.q);
+        a.innerHTML = 'Explain ' + g.t.replace(/</g, '&lt;') + ' <svg class="ico"><use href="#i-arrowUpRight"/></svg>';
+        pop.hidden = false; place(el);
+      }
+      function hideSoon() { clearTimeout(timer); timer = setTimeout(function () { pop.hidden = true; current = null; }, 200); }
+      function termOf(n) { return n && n.closest ? n.closest('.term') : null; }
+      function inPop(n) { return n && n.closest ? n.closest('.term-pop') : null; }
+
+      document.addEventListener('mouseover', function (e) {
+        var t = termOf(e.target);
+        if (t) show(t); else if (inPop(e.target)) clearTimeout(timer);
+      });
+      document.addEventListener('mouseout', function (e) { if (termOf(e.target) || inPop(e.target)) hideSoon(); });
+      document.addEventListener('focusin', function (e) { var t = termOf(e.target); if (t) show(t); });
+      document.addEventListener('focusout', function (e) { if (termOf(e.target)) hideSoon(); });
+      document.addEventListener('click', function (e) {          // touch screens: tap to open, tap elsewhere to close
+        var t = termOf(e.target);
+        if (t) { current === t && !pop.hidden ? (pop.hidden = true) : show(t); }
+        else if (!inPop(e.target)) pop.hidden = true;
+      });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') pop.hidden = true; });
+      window.addEventListener('scroll', function () { if (!pop.hidden && current) place(current); }, true);
+    })();
+  </script>
 </body>
 </html>

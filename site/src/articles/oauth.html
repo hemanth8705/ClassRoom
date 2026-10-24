@@ -1,8 +1,5 @@
 <style>
 h2.part { font-size: 1.6rem; margin: 48px 0 0; padding-top: 24px; border-top: 2px solid var(--line); }
-.launch { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 14px 0; }
-.pills { display: flex; flex-wrap: wrap; gap: 6px; }
-button.btn.big { font-size: 1.05rem; padding: 10px 20px; }
 .wt { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column; }
 .wt[hidden] { display: none; }
 .wt-top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
@@ -17,12 +14,12 @@ button.btn.big { font-size: 1.05rem; padding: 10px 20px; }
 .wt-head h2 { margin: 0; font-size: 1.6rem; }
 .wt-head .num { flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff;
                   display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem; }
-.wt .lab { margin: 18px 0 6px; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-ul.pts { margin: 0; padding-left: 1.2em; font-size: 1.1rem; line-height: 1.5; }
+.wt .lab { margin: 14px 0 6px; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+ul.pts { margin: 0; padding-left: 1.2em; font-size: 1.02rem; line-height: 1.45; }
 ul.pts li { margin: 4px 0; }
-.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; align-items: baseline; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; align-items: baseline; font-size: .93rem; line-height: 1.45; }
 .kv span { color: var(--ink); }
-.wt pre.shape { margin: 0; font-size: .9rem; }
+.wt pre.shape { margin: 0; font-size: .8rem; line-height: 1.5; padding: 12px 16px; }
 .wt-dots { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 12px 24px; border-top: 1px solid var(--line); background: var(--card); }
 @media (max-width: 800px) {
     .wt-body { grid-template-columns: 1fr; grid-template-rows: 40% 1fr; padding: 12px 16px; gap: 12px; }
@@ -83,6 +80,20 @@ th { background: var(--code); }
 .card h3 { margin-top: 0; }
 ol.plain { padding-left: 1.3em; }
 ol.plain li { margin: 6px 0; }
+.wtp { border: 1px solid var(--line-2); border-radius: 16px; background: var(--bg); overflow: hidden; cursor: pointer; margin: 22px 0; transition: border-color .2s; }
+.wtp:hover { border-color: var(--muted); }
+.wtp-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--card-2); }
+.wtp-dots { display: flex; gap: 6px; }
+.wtp-dots i { display: block; width: 9px; height: 9px; border-radius: 50%; background: var(--line-2); }
+.wtp-title { margin-right: auto; font: 500 .7rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.wtp-body { display: grid; grid-template-columns: 1.1fr 1fr; gap: 24px; padding: 16px 22px; align-items: center; }
+.wtp-body svg { width: 100%; height: auto; max-height: 290px; }
+.wtp-info { display: flex; gap: 14px; align-items: flex-start; }
+.wtp-info .num { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: var(--bg); display: grid; place-items: center; font: 600 .95rem var(--mono); }
+.wtp-step { font: 500 .7rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.wtp-t { font: 400 1.6rem/1.15 var(--serif); margin: 6px 0 12px; color: var(--ink); }
+.wtp-hint { font: 400 .78rem var(--mono); color: var(--muted); }
+@media (max-width: 700px) { .wtp-body { grid-template-columns: 1fr; } }
 </style>
 <div class="frag-main">
 
@@ -90,20 +101,21 @@ ol.plain li { margin: 6px 0; }
 <section id="problem">
   <span class="step">THE PROBLEM</span>
   <h2>Every app wants a password. That's a bad deal.</h2>
-  <p>Say you build a calendar app. Users sign up, so you store a password for each one. Now you own a database people want to steal. Users reuse that password everywhere. You also need reset emails, lockouts and breach notices.</p>
-  <p>Google already did all of that, better than you will. So skip it. Ask Google: <b>"is this person real? Vouch for them."</b></p>
-  <p>That's OAuth. You hand the login job to a company the user already trusts. The user signs in on <b>Google's</b> page. Your app only gets a token that says "Google checked this person, and they allowed you to see X."</p>
+  <p>Say you're building a calendar app. Your users have to sign up, so you store a password for each one of them.</p>
+  <p>Now you're sitting on a database that hackers would love to steal. Most people use the same password everywhere, so when your database leaks, their other accounts go down with it. You'd also have to build password resets, and tell everyone when you get breached. And making people create yet another email and password is a bad experience on its own.</p>
+  <p>Continuing with Google is much simpler. Google already verifies your users. Your user just tells Google, <b>"vouch for me,"</b> and Google tells your app that this is a real person.</p>
+  <p>That's <b>OAuth</b>. You hand the login job to a company your users already trust. Your app never sees a password. All it gets is a token that says: Google checked this person, and they're allowing you to see these details.</p>
 
   <div class="callout blue">
-    <b>Think hotel keycard.</b> You don't give a guest your house key. The front desk prints a card that opens room 204 only, and dies at checkout. In OAuth, Google is the front desk. The access token is the keycard.
+    <b>Think of a hotel keycard.</b> You don't hand a guest the key to your house. The front desk prints a card that opens room 204 only, and stops working at checkout. Google is the front desk. The token is the keycard.
   </div>
 </section>
 
 <!-- ================= PLAYERS ================= -->
 <section id="players">
   <span class="step">THE CAST</span>
-  <h2>Four names you'll keep seeing</h2>
-  <p>Click each one.</p>
+  <h2>In this article, you'll keep meeting four names</h2>
+  <p>Click each one to see who it is.</p>
   <div class="row">
     <div class="grow">
       <svg viewBox="0 0 400 250" width="100%" role="img" aria-label="Four roles in OAuth">
@@ -117,34 +129,44 @@ ol.plain li { margin: 6px 0; }
 <!-- ================= FLOW ================= -->
 <section id="flow">
   <span class="step">THE FLOW</span>
-  <h2>Eight steps, start to finish</h2>
-  <p>This is the "Authorization Code" flow. It's the one you should use. The walkthrough opens full screen, so you see the whole picture at once.</p>
-  <div class="launch">
-    <button class="btn big" id="wt-open"><svg class="ico"><use href="#i-play"/></svg> Open the 8-step walkthrough</button>
-    <div class="pills" id="wt-pills"></div>
+  <h2>We've split the flow into 8 steps</h2>
+  <p>This is the Authorization Code flow, the one you should use. Go through the steps below one by one. Hit maximize for the full-screen view, and use the arrow keys to move.</p>
+
+  <div class="wtp" id="wt-preview">
+    <div class="wtp-bar">
+      <span class="wtp-dots"><i></i><i></i><i></i></span>
+      <span class="wtp-title">Authorization Code flow · 8 steps</span>
+      <button class="btn alt" id="wt-open" aria-label="Open the 8-step walkthrough full screen"><svg class="ico"><use href="#i-maximize"/></svg> Maximize</button>
+    </div>
+    <div class="wtp-body">
+      <svg id="wtp-svg" viewBox="0 0 600 450" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+      <div class="wtp-info" id="wtp-info"></div>
+    </div>
   </div>
+
   <div class="callout blue">
-    <b>Why a code first, then a token?</b> The code travels through the browser, where anyone looking can see it. So it's worth nothing alone. The real tokens only come back on a private server-to-server call that needs your client secret. The walkthrough tags every step <span class="tag pub">visible</span> or <span class="tag priv">private</span>.
+    <b>Why does Google send a code first, and not the token itself?</b> Because the code comes back through the browser, where anyone could see it. On its own it's useless. The real tokens only travel on a private call from your server to Google, and that call needs your client secret. In the walkthrough, every step is tagged <span class="tag pub">visible</span> or <span class="tag priv">private</span>, so you can see which side of the line it's on.
   </div>
 </section>
 
 <!-- ================= TOKENS ================= -->
 <section id="tokens">
   <span class="step">WHAT YOU GET BACK</span>
-  <h2>Three tokens, three jobs</h2>
+  <h2>Google hands you three tokens</h2>
+  <p>After step 6, your app is holding three tokens. Each one has a different job.</p>
   <div class="scroll">
   <table>
     <tr><th></th><th>Access token</th><th>Refresh token</th><th>ID token</th></tr>
-    <tr><th>Job</th><td>Call Google's APIs for the user</td><td>Get a new access token</td><td>Tell your app who just logged in</td></tr>
+    <tr><th>Job</th><td>Calls Google's APIs for the user</td><td>Gets a new access token</td><td>Tells your app who just logged in</td></tr>
     <tr><th>Lives</th><td>About an hour (<code>expires_in: 3599</code>)</td><td>Until the user revokes it</td><td>About an hour</td></tr>
     <tr><th>Sent to</th><td>Google's API, in a header</td><td>Google's token endpoint only</td><td>Read by your backend only</td></tr>
-    <tr><th>If stolen</th><td>Attacker has access until it expires</td><td>Attacker keeps getting new ones. Guard it.</td><td>Not a key. Don't use it to call APIs.</td></tr>
+    <tr><th>If stolen</th><td>Attacker has access until it expires</td><td>Attacker keeps getting new ones, so guard it</td><td>Not a key. Don't use it to call APIs</td></tr>
   </table>
   </div>
-  <p class="note">You only get a refresh token if you ask with <code>access_type=offline</code>. Google sends it on the first consent. Adding <code>prompt=consent</code> makes it come back on every login.</p>
+  <p class="note">You only get a <span class="term" tabindex="0" data-term="refresh_token">refresh token</span> if you ask for it with <code>access_type=offline</code>. Google sends it the first time the user agrees. Add <code>prompt=consent</code> and you get a fresh one on every login.</p>
 
-  <h3>Open an ID token</h3>
-  <p>The ID token is a JWT: three chunks joined by dots. The middle chunk is just JSON in disguise (base64). Press the button.</p>
+  <h3>Let's open an ID token</h3>
+  <p>The <span class="term" tabindex="0" data-term="id_token">ID token</span> is a <span class="term" tabindex="0" data-term="jwt">JWT</span>: three chunks joined by dots. The middle chunk is your user's details, written as JSON and then encoded. Press the button and we'll decode it.</p>
   <div id="jwt-demo">
     <div class="row">
       <div class="grow">
@@ -157,7 +179,7 @@ ol.plain li { margin: 6px 0; }
     </div>
 
     <h3>Why the last chunk matters</h3>
-    <p>The third chunk is Google's signature. Edit the email, then check. Your backend would compare the signature against Google's public keys and reject a changed token.</p>
+    <p>The last chunk is Google's signature. Change the email below, then check. Your backend compares the signature with Google's public keys, and a changed token fails.</p>
     <div class="row">
       <div class="grow">
         <div class="flowbox">
@@ -168,7 +190,7 @@ ol.plain li { margin: 6px 0; }
       <div class="grow"><div class="result" id="jwt-res"></div></div>
     </div>
   </div>
-  <p class="note">This check is simulated here. In real code, use your Google client library to verify an ID token. Don't write the signature math yourself.</p>
+  <p class="note">The check above is simulated. In real code, let your Google client library verify the ID token. Don't write the signature math yourself.</p>
 </section>
 
 <h2 class="part">Now let’s build it</h2>
@@ -176,16 +198,16 @@ ol.plain li { margin: 6px 0; }
 <!-- ================= SETUP ================= -->
 <section id="setup">
   <span class="step">BUILD · 1 OF 2</span>
-  <h2>Register your app with Google</h2>
-  <p>Google has to know your app exists. In <b>Google Cloud Console › APIs &amp; Services › Credentials</b>, create an <b>OAuth client ID</b> (type: Web application). You get two things back:</p>
+  <h2>First, register your app with Google</h2>
+  <p>Before any of this works, Google has to know your app exists. In the Google Cloud Console, open <b>APIs &amp; Services</b>, then <b>Credentials</b>, and create an <b>OAuth client ID</b> (type: Web application). Microsoft and other platforms have the same step. You get two things back:</p>
   <div class="two">
-    <div class="card"><h3>Client ID</h3><p>Your app's public name. It goes in the login URL. Everyone can see it. That's fine.</p></div>
-    <div class="card"><h3>Client secret</h3><p>Your app's password. It stays on your server. It never goes in a URL, in the browser, or in Git.</p></div>
+    <div class="card"><h3><span class="term" tabindex="0" data-term="client_id">Client ID</span></h3><p>Your app's public name. It goes in the login URL, and it's fine if everyone sees it.</p></div>
+    <div class="card"><h3><span class="term" tabindex="0" data-term="client_secret">Client secret</span></h3><p>Your app's password. It stays on your server. It never goes in a URL, in the browser, or in Git.</p></div>
   </div>
-  <p>You also register a <b>redirect URI</b>, like <code>http://localhost:3000/callback</code>. It's the only address Google will send users back to. If it doesn't match exactly, Google refuses. This stops anyone from redirecting your users' codes to their own site.</p>
+  <p>Then you register a <span class="term" tabindex="0" data-term="redirect_uri">redirect URI</span>, like <code>http://localhost:3000/callback</code>. It's the only address Google will send users back to. If a request doesn't match it exactly, Google refuses, so nobody can redirect your users' codes to their own site.</p>
 
   <h3>Scopes: what you're asking for</h3>
-  <p>Your app asks for scopes in the login URL. Each scope is one permission. Pick some and watch the screen your user will see.</p>
+  <p><span class="term" tabindex="0" data-term="scope">Scopes</span> are the permissions your app asks for, and your app lists them in the login URL. Basic ones give you the user's name, email and profile photo. Privileged ones, like reading their calendar or Drive files, need an explicit yes from the user. Pick a few and see what your user would see.</p>
   <div class="row">
     <div class="grow picks" id="picks"></div>
     <div class="grow">
@@ -194,78 +216,78 @@ ol.plain li { margin: 6px 0; }
       <pre class="shape" id="scope-out" style="white-space:pre-wrap;word-break:break-all"></pre>
     </div>
   </div>
-  <div class="callout">Ask for the least you need. A name-and-email screen gets clicked through. A "delete your Drive files" screen gets closed. Google also reviews apps that ask for sensitive or restricted scopes before the public can use them. While testing, add your own account as a test user.</div>
+  <div class="callout">Ask for the least you need. People click through a name-and-email screen. They close a "delete your Drive files" screen. Google also reviews apps that ask for sensitive or restricted scopes before the public can use them, so while you're testing, add your own account as a test user.</div>
 </section>
 
 <!-- ================= CODE ================= -->
 <section id="code">
   <span class="step">BUILD · 2 OF 2</span>
-  <h2>The code: Python + Flask</h2>
-  <p>Needs Python 3.9+. Install once, then run with your two values from the Cloud Console:</p>
+  <h2>Now the code: Python and Flask</h2>
+  <p>You'll need Python 3.9 or newer. Install once, then run it with the two values from the Cloud Console:</p>
   <pre class="shape">pip install flask requests
 
 # macOS / Linux
 CLIENT_ID=xxx CLIENT_SECRET=yyy python server.py
 # Windows PowerShell
 $env:CLIENT_ID="xxx"; $env:CLIENT_SECRET="yyy"; python server.py</pre>
-  <p>One file, four pieces. Click through them in order. Put them all in <code>server.py</code>.</p>
+  <p>It's all one file, <code>server.py</code>, in four pieces. Click through them in order.</p>
   <div class="tabs" id="code-tabs"></div>
   <p class="note" id="code-why" style="margin:8px 0 0"></p>
   <pre class="shape" id="code-view" style="min-height:120px;max-height:70vh;overflow:auto"></pre>
   <div class="flowbox"><button class="btn alt" id="code-copy">Copy this piece</button></div>
   <div class="callout">
-    <b>Not production yet.</b> The server-side store here is a plain dict, so a restart logs everyone out. In a real app use Redis or a database, encrypt the refresh token at rest, set <code>SESSION_COOKIE_SECURE</code> and <code>SESSION_COOKIE_HTTPONLY</code>, and serve over HTTPS.
+    <b>This isn't production-ready yet.</b> The store here is a plain dict, so a restart logs everyone out. In a real app, use Redis or a database, encrypt the refresh token at rest, set <code>SESSION_COOKIE_SECURE</code> and <code>SESSION_COOKIE_HTTPONLY</code>, and serve everything over HTTPS.
   </div>
 </section>
 
 <!-- ================= ATTACKS ================= -->
 <section id="attacks">
   <span class="step">WHAT CAN GO WRONG</span>
-  <h2>Two small lines of code that stop two real attacks</h2>
-  <p>You saw <code>state</code> and <code>code_challenge</code> in the URL. Toggle the defence, then run the attack.</p>
+  <h2>Two small checks stop two real attacks</h2>
+  <p>Remember <span class="term" tabindex="0" data-term="state">state</span> and <span class="term" tabindex="0" data-term="pkce">code_challenge</span> from the login URL? This is why they're there. Switch a defence on or off, then run the attack and see what happens.</p>
 
   <div class="two">
     <div class="card">
-      <h3>1. Fake callback link</h3>
-      <p>An attacker logs in with their own Google account, grabs the callback link with their code, and sends it to you. You click it.</p>
-      <label><input type="checkbox" id="a1-on" checked> App checks <code>state</code></label><br><br>
+      <h3>1. The fake callback link</h3>
+      <p>An attacker signs in with their own Google account, grabs the callback link with their code in it, and sends it to you. You click it.</p>
+      <label><input type="checkbox" id="a1-on" checked> App checks <span class="term" tabindex="0" data-term="state">state</span></label><br><br>
       <button class="btn" id="a1-run">Run attack</button>
       <div class="result" id="a1-res"></div>
     </div>
     <div class="card">
-      <h3>2. Stolen code</h3>
-      <p>A malicious browser extension or a leaked log copies the <code>code</code> from the URL, then races your app to Google.</p>
-      <label><input type="checkbox" id="a2-on" checked> App uses PKCE</label><br><br>
+      <h3>2. The stolen code</h3>
+      <p>A browser extension, or a leaked log, copies the <code>code</code> from the URL and races your app to Google.</p>
+      <label><input type="checkbox" id="a2-on" checked> App uses <span class="term" tabindex="0" data-term="pkce">PKCE</span></label><br><br>
       <button class="btn" id="a2-run">Run attack</button>
       <div class="result" id="a2-res"></div>
     </div>
   </div>
-  <p class="note">How they work. <code>state</code>: your app invents a random value, stores it, and checks Google returns the same one. <b>PKCE</b>: your app invents a secret (<code>code_verifier</code>), sends only its hash (<code>code_challenge</code>) at the start, and reveals the secret at the token swap. Whoever started the login is the only one who can finish it.</p>
+  <p class="note">In short: your app makes up a random <code>state</code>, saves it, and checks that Google returns the same one. With PKCE, your app makes up a secret (<code>code_verifier</code>), sends only its hash (<code>code_challenge</code>) at the start, and reveals the secret when it swaps the code. Whoever started the login is the only one who can finish it.</p>
 </section>
 
 <!-- ================= AUTHN vs AUTHZ ================= -->
 <section id="difference">
   <span class="step">ONE LAST THING</span>
   <h2>Authentication vs authorization</h2>
-  <p>People mix these up. OAuth is the second one. Mostly.</p>
+  <p>People mix these two up all the time. Here's the difference.</p>
   <div class="two">
-    <div class="card"><h3><span class="ico-tile"><svg class="ico"><use href="#i-id"/></svg></span>Authentication</h3><p><b>Who are you?</b> Like showing your passport at the hotel desk.</p><p class="note">In our flow: the <b>ID token</b>. This part is called OpenID Connect (OIDC), a thin layer on top of OAuth. It's what <code>openid email profile</code> turned on.</p></div>
-    <div class="card"><h3><span class="ico-tile"><svg class="ico"><use href="#i-key"/></svg></span>Authorization</h3><p><b>What may you touch?</b> Like a keycard that only opens room 204.</p><p class="note">In our flow: the <b>access token</b> and its scopes. This is OAuth itself.</p></div>
+    <div class="card"><h3><span class="ico-tile"><svg class="ico"><use href="#i-id"/></svg></span>Authentication</h3><p><b>Who are you?</b> It's like showing your passport at the hotel desk.</p><p class="note">In our flow, that's the <b>ID token</b>. This part is called <span class="term" tabindex="0" data-term="oidc">OpenID Connect</span> (OIDC), a thin layer on top of OAuth. It's what <code>openid email profile</code> switched on.</p></div>
+    <div class="card"><h3><span class="ico-tile"><svg class="ico"><use href="#i-key"/></svg></span>Authorization</h3><p><b>What are you allowed to touch?</b> It's like a keycard that only opens room 204.</p><p class="note">In our flow, that's the <b>access token</b> and its scopes. This is OAuth itself.</p></div>
   </div>
-  <p>"Continue with Google" does both at once. You prove who you are, and you decide what the app can do on your behalf.</p>
+  <p>"Continue with Google" does both at once. You prove who you are, and you decide what the app may do on your behalf.</p>
 </section>
 
 <!-- ================= TAKEAWAYS ================= -->
 <section id="takeaways">
   <span class="step">KEEP THESE</span>
-  <h2>Checklist before you ship</h2>
+  <h2>Before you ship, check these</h2>
   <ol class="plain">
-    <li>Client secret lives on the server. Nowhere else.</li>
+    <li>The client secret lives on the server. Nowhere else.</li>
     <li>Register the redirect URI exactly. No wildcards.</li>
     <li>Always send and check <code>state</code>. Always use PKCE.</li>
     <li>Ask for the smallest scopes that work.</li>
-    <li>Treat the refresh token like a password. Encrypt it at rest.</li>
-    <li>Never use an ID token to call an API. Never use an access token to identify a user.</li>
+    <li>Treat the refresh token like a password, and encrypt it at rest.</li>
+    <li>Never use an ID token to call an API, and never use an access token to identify a user.</li>
     <li>Let a library verify ID tokens.</li>
   </ol>
 </section>
@@ -306,10 +328,10 @@ function iconUse(name, x, y, size) {
 
 /* ---------- CAST ---------- */
 const CAST = [
-  { id: "owner",  icon: "user", name: "Resource owner", x: 20,  y: 20,  who: "You, the user.", text: "The data is yours, so you decide who gets it." },
-  { id: "client", icon: "calendar", name: "Client",         x: 210, y: 20,  who: "The calendar app you're building.", text: "It wants access to your stuff. Confusing name: here “client” means the app, not you." },
-  { id: "auth",   icon: "shield", name: "Auth server",    x: 20,  y: 140, who: "Google's login and consent service.", text: "Checks who you are, asks what you allow, and prints tokens." },
-  { id: "res",    icon: "database", name: "Resource server",x: 210, y: 140, who: "Google Calendar's API.", text: "Holds the actual data. Opens only for a valid access token." },
+  { id: "owner",  icon: "user",     name: "Resource owner",  x: 20,  y: 20,  who: "Your user.", text: "The person signing in with Google. The data, like their calendar and Drive, belongs to them, so they decide who gets to see it." },
+  { id: "client", icon: "calendar", name: "Client",          x: 210, y: 20,  who: "Your app, the calendar app you're building.", text: "It's the one asking for access. Confusing name: here \u201cclient\u201d means your app, not the user." },
+  { id: "auth",   icon: "shield",   name: "Auth server",     x: 20,  y: 140, who: "Google's login and consent service.", text: "It checks who the user is, asks what they're okay with, and hands out the tokens." },
+  { id: "res",    icon: "database", name: "Resource server", x: 210, y: 140, who: "Google Calendar's API.", text: "It holds the actual data, and only opens for a valid access token." },
 ];
 (function () {
   const g = $("#cast");
@@ -361,58 +383,93 @@ const picked = new Set(["base", "calr"]);
   draw();
 })();
 
+/* ---------- GLOSSARY (hover definitions) ---------- */
+window.GLOSSARY = Object.assign(window.GLOSSARY || {}, {
+  pkce: { t: "PKCE", q: "explain PKCE. What does PKCE mean in the OAuth authorization code flow?",
+    d: "Short for Proof Key for Code Exchange, said “pixie”. Your app makes up a secret, sends only its hash at the start, and reveals the secret when it swaps the code for tokens. Google checks that they match, so only the app that began the login can finish it." },
+  state: { t: "state", q: "What is the state parameter in the OAuth authorization code flow and why is it used?",
+    d: "A random value your app makes up before sending the user to Google. Google hands it back unchanged. If it doesn’t match what your app saved, the request was forged, so reject it." },
+  client_id: { t: "client_id", q: "What is client_id in OAuth and where do I get it in Google Cloud Console?",
+    d: "The public ID of the app you registered with Google. It tells Google which app is asking. It’s fine for it to be visible." },
+  client_secret: { t: "client_secret", q: "What is client_secret in OAuth and how should it be stored?",
+    d: "Your app’s password, handed out when you register it. It lives only on your server and is used when swapping the code for tokens. Never put it in a URL, in the browser or in Git." },
+  redirect_uri: { t: "redirect_uri", q: "What is redirect_uri in OAuth 2.0 and why must it match exactly?",
+    d: "The one address Google is allowed to send the user back to. You register it up front, and Google refuses any request that doesn’t match it exactly." },
+  scope: { t: "scope", q: "What are OAuth scopes in the Google OAuth authorization code flow?",
+    d: "A permission your app asks for, like reading the calendar. Each scope is one thing the user is agreeing to." },
+  code: { t: "authorization code", q: "What is the authorization code in the OAuth authorization code flow?",
+    d: "A short-lived, single-use ticket that Google sends back through the browser. It isn’t the key. Your server swaps it for real tokens." },
+  access_token: { t: "access token", q: "What is an access token in OAuth 2.0?",
+    d: "The keycard. Your app sends it with every API call to prove the user allowed this. It expires after about an hour." },
+  refresh_token: { t: "refresh token", q: "What is a refresh token in OAuth 2.0 and how does it work with Google?",
+    d: "A long-lived token that can only do one thing: get a new access token, so the user doesn’t have to sign in again." },
+  id_token: { t: "ID token", q: "What is an ID token in OpenID Connect and how is it different from an access token?",
+    d: "A signed token that says who just logged in: their ID, email and name. It’s for your backend to read, not for calling APIs." },
+  jwt: { t: "JWT", q: "What is a JWT and how does signature verification work?",
+    d: "JSON Web Token. Three encoded chunks joined by dots: header, payload, signature. Anyone can read the payload, but only the signature proves it wasn’t changed." },
+  oidc: { t: "OpenID Connect", q: "What is OpenID Connect and how does it relate to OAuth 2.0?",
+    d: "A thin layer on top of OAuth that adds login. It’s what gives you the ID token." },
+});
+const T = (k, text) => `<span class="term" tabindex="0" data-term="${k}">${text}</span>`;
+
 /* ---------- FLOW ---------- */
 const COLS = { you: 70, app: 300, goo: 530 };
+// kv entries are [name, meaning, glossaryKey?]
 const STEPS = [
   { from: "you", to: "app", label: "1  Click the button", short: "Click", tag: "pub", who: "Visible in the browser",
-    title: "You click the button",
-    pts: ["Your browser asks the app to start login", "No OAuth yet"],
+    title: "The user clicks Continue with Google",
+    pts: ["Your app has a button called Continue with Google", "The user clicks it, and your app takes over from here"],
     kv: [],
     code: "GET https://myapp.com/login" },
   { from: "app", to: "you", label: "2  Redirect to Google", short: "Redirect", tag: "pub", who: "Visible in the browser",
-    title: "The app sends you to Google",
-    pts: ["App builds a URL and redirects your browser", "Nothing secret is in it"],
-    kv: [["client_id", "Which app is asking"], ["scope", "What it wants"], ["redirect_uri", "Where to come back to"],
-         ["state", "Random. Checked in step 4"], ["code_challenge", "PKCE. Checked in step 5"]],
+    title: "Your app sends the browser to Google",
+    pts: ["Your app builds a URL and redirects the user’s browser to it", "Everything in that URL is visible, so nothing secret goes in it", "These are its key parts:"],
+    kv: [["client_id", "The app you created in Google Cloud Console, or on whichever OAuth platform you use. We set that up in the build section below.", "client_id"],
+         ["scope", "What you’re asking the user for. The basics are name, email and photo. Privileged ones are things like their calendar or Drive files.", "scope"],
+         ["redirect_uri", "Where Google sends the user back, with proof they’re valid. It’s a URL on your backend.", "redirect_uri"],
+         ["state", "A random value. Your app saves it now and checks it in step 4.", "state"],
+         ["code_challenge", "The PKCE part. It makes sure only this app can finish the login in step 5.", "pkce"]],
     code: "https://accounts.google.com/o/oauth2/v2/auth\n  ?client_id=1234-abc.apps.googleusercontent.com\n  &redirect_uri=https://myapp.com/callback\n  &response_type=code\n  &scope=openid email profile .../auth/calendar.readonly\n  &state=x7f3a9\n  &code_challenge=E9Mel...\n  &access_type=offline" },
-  { from: "you", to: "goo", label: "3  Log in, approve", short: "Approve", tag: "priv", who: "Private: you and Google only",
-    title: "You log in on Google's page",
-    pts: ["Already signed in? Just press Continue", "Google lists what the app wants", "Your app sees none of this"],
+  { from: "you", to: "goo", label: "3  Sign in, approve", short: "Approve", tag: "priv", who: "Private: the user and Google only",
+    title: "The user signs in on Google",
+    pts: ["Already signed in to Google? They just press Continue", "If not, they enter their Google credentials, on Google’s page and not yours", "Google then lists what your app is asking for: name, email, picture, maybe their calendar", "The user gives permission here. Your app sees none of this"],
     kv: [],
+    codeLabel: "What the user sees",
     code: "Calendar App wants to:\n  [x] See your name, email and picture\n  [x] See your calendar events\n\n[Cancel]  [Continue]" },
   { from: "goo", to: "app", dashed: true, label: "4  Back with a code", short: "Code", tag: "pub", who: "Visible in the browser",
-    title: "Google sends you back with a code",
-    pts: ["Browser lands on your redirect URI", "The code is a one-time ticket, not the key", "App checks that state matches step 2"],
-    kv: [["code", "Short-lived, single use"], ["state", "Must equal the one from step 2"]],
+    title: "Google sends the user back with a code",
+    pts: ["The user said yes, so Google redirects the browser to your redirect_uri", "It brings a code: a one-time ticket, not the real key", "Your app first checks that state matches what it saved in step 2"],
+    kv: [["code", "A short-lived, single-use ticket", "code"], ["state", "Must be exactly the one from step 2", "state"]],
     code: "https://myapp.com/callback\n  ?code=4/0AfJohXn...\n  &state=x7f3a9" },
-  { from: "app", to: "goo", label: "5  Swap code for tokens", short: "Swap", tag: "priv", who: "Private: server to Google",
-    title: "Your backend swaps the code for tokens",
-    pts: ["Server calls Google directly. No browser", "The client secret is used here"],
-    kv: [["code", "The ticket from step 4"], ["client_secret", "Never leaves your server"], ["code_verifier", "PKCE proof: same app that started"]],
+  { from: "app", to: "goo", label: "5  Swap code for tokens", short: "Swap", tag: "priv", who: "Private: your server and Google",
+    title: "Your server swaps the code for tokens",
+    pts: ["Now your server calls Google directly, and the browser stays out of it", "It sends the code plus the client secret", "That secret is why a stolen code is worthless on its own"],
+    kv: [["code", "The ticket from step 4", "code"], ["client_secret", "Your app’s password. It never leaves your server", "client_secret"], ["code_verifier", "The PKCE secret. It proves this is the app that started the login", "pkce"]],
     code: "POST https://oauth2.googleapis.com/token\n\ngrant_type=authorization_code\ncode=4/0AfJohXn...\nclient_id=1234-abc...\nclient_secret=GOCSPX-...\nredirect_uri=https://myapp.com/callback\ncode_verifier=dBjftJeZ..." },
-  { from: "goo", to: "app", label: "6  Tokens come back", short: "Tokens", tag: "priv", who: "Private: Google to server",
-    title: "Google hands over the tokens",
-    pts: ["Save them against this user", "The user is now logged in"],
-    kv: [["access_token", "Calls the API. Lasts about an hour"], ["refresh_token", "Gets a new access token"], ["id_token", "Says who the user is"]],
+  { from: "goo", to: "app", label: "6  Tokens come back", short: "Tokens", tag: "priv", who: "Private: Google and your server",
+    title: "Google hands back the tokens",
+    pts: ["Your app saves them against this user", "From here on, the user is logged in to your app"],
+    kv: [["access_token", "Calls the API. Lasts about an hour", "access_token"], ["refresh_token", "Gets a new access token later", "refresh_token"], ["id_token", "Says who the user is", "id_token"]],
     code: "{\n  \"access_token\":  \"ya29.a0AfH6...\",\n  \"expires_in\":    3599,\n  \"refresh_token\": \"1//0gLq...\",\n  \"scope\":         \"openid ... calendar.readonly\",\n  \"token_type\":    \"Bearer\",\n  \"id_token\":      \"eyJhbGciOi...\"\n}" },
-  { from: "app", to: "goo", label: "7  Use the access token", short: "Call API", tag: "priv", who: "Private: server to Google",
-    title: "The app calls the Calendar API",
-    pts: ["Token goes in the Authorization header", "Google checks the token and its scopes", "The events come back"],
+  { from: "app", to: "goo", label: "7  Use the access token", short: "Call API", tag: "priv", who: "Private: your server and Google",
+    title: "Your app calls the Calendar API",
+    pts: ["The access token goes in the Authorization header", "Google checks the token and the scopes", "If both are fine, the calendar events come back"],
     kv: [],
     code: "GET https://www.googleapis.com/calendar/v3/calendars/primary/events\nAuthorization: Bearer ya29.a0AfH6..." },
-  { from: "app", to: "goo", label: "8  An hour later: refresh", short: "Refresh", tag: "priv", who: "Private: server to Google",
-    title: "The token expired. Refresh it.",
-    pts: ["Access token is dead after about an hour", "Refresh token gets a new one", "The user sees nothing"],
-    kv: [["refresh_token", "Saved in step 6"]],
+  { from: "app", to: "goo", label: "8  An hour later: refresh", short: "Refresh", tag: "priv", who: "Private: your server and Google",
+    title: "An hour later, the token expires",
+    pts: ["Access tokens are short-lived on purpose", "Your app quietly sends the refresh token to get a new one", "The user sees nothing"],
+    kv: [["refresh_token", "The one saved in step 6", "refresh_token"]],
     code: "POST https://oauth2.googleapis.com/token\n\ngrant_type=refresh_token\nrefresh_token=1//0gLq...\nclient_id=1234-abc...\nclient_secret=GOCSPX-..." },
 ];
 let fi = 0;
 
-function drawDiagram(svg, cur) {
+// pfx keeps marker ids unique when the diagram is drawn twice (preview + full screen).
+function drawDiagram(svg, cur, pfx = "a", clickable = false) {
   svg.innerHTML = "";
   const defs = el("defs");
-  [["a-on", "var(--accent)"], ["a-past", "var(--muted)"], ["a-off", "var(--line)"]].forEach(([id, col]) => {
-    const m = el("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" });
+  [["on", "var(--accent)"], ["past", "var(--muted)"], ["off", "var(--line-2)"]].forEach(([id, col]) => {
+    const m = el("marker", { id: `${pfx}-${id}`, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" });
     m.appendChild(el("path", { d: "M0,0 L10,5 L0,10 z", fill: col }));
     defs.appendChild(m);
   });
@@ -421,33 +478,36 @@ function drawDiagram(svg, cur) {
   for (const k in COLS) {
     svg.appendChild(iconUse(names[k][0], COLS[k] - 14, 6, 28));
     svg.appendChild(el("text", { x: COLS[k], y: 48, "text-anchor": "middle", "font-size": 13, fill: "var(--ink)", "font-weight": 600 }, names[k][1]));
-    svg.appendChild(el("line", { x1: COLS[k], x2: COLS[k], y1: 58, y2: 445, stroke: "var(--line)", "stroke-width": 2, "stroke-dasharray": "4 4" }));
+    svg.appendChild(el("line", { x1: COLS[k], x2: COLS[k], y1: 58, y2: 445, stroke: "var(--line-2)", "stroke-width": 2, "stroke-dasharray": "4 4" }));
   }
   STEPS.forEach((s, i) => {
     const y = 92 + i * 44;
     const state = i === cur ? "on" : i < cur ? "past" : "off";
-    const col = state === "on" ? "var(--accent)" : state === "past" ? "var(--muted)" : "var(--line)";
+    const col = state === "on" ? "var(--accent)" : state === "past" ? "var(--muted)" : "var(--line-2)";
     const x1 = COLS[s.from], x2 = COLS[s.to];
-    const ln = el("line", { x1, x2: x2 + (x2 > x1 ? -6 : 6), y1: y, y2: y, stroke: col, "stroke-width": state === "on" ? 3 : 2, "marker-end": `url(#a-${state})` });
+    const ln = el("line", { x1, x2: x2 + (x2 > x1 ? -6 : 6), y1: y, y2: y, stroke: col, "stroke-width": state === "on" ? 3 : 2, "marker-end": `url(#${pfx}-${state})` });
     if (s.dashed) ln.setAttribute("stroke-dasharray", "6 4");
     svg.appendChild(ln);
     svg.appendChild(el("text", { x: (x1 + x2) / 2, y: y - 7, "text-anchor": "middle", "font-size": 13,
       fill: state === "off" ? "var(--muted)" : "var(--ink)", "font-weight": state === "on" ? 700 : 400, opacity: state === "off" ? .65 : 1 }, s.label));
-    const hit = el("rect", { x: 0, y: y - 24, width: 600, height: 36, fill: "transparent", style: "cursor:pointer" });
-    hit.addEventListener("click", () => { fi = i; drawWalk(); });
-    svg.appendChild(hit);
+    if (clickable) {
+      const hit = el("rect", { x: 0, y: y - 24, width: 600, height: 36, fill: "transparent", style: "cursor:pointer" });
+      hit.addEventListener("click", () => { fi = i; drawWalk(); });
+      svg.appendChild(hit);
+    }
   });
 }
 
 function drawWalk() {
   const s = STEPS[fi];
-  drawDiagram($("#wt-svg"), fi);
+  drawDiagram($("#wt-svg"), fi, "a", true);
+  const kv = s.kv.map(([k, v, g]) => `<code${g ? ` class="term" tabindex="0" data-term="${g}"` : ""}>${k}</code><span>${v}</span>`).join("");
   $("#wt-panel").innerHTML =
     `<div class="wt-head"><span class="num">${fi + 1}</span><h2>${s.title}</h2></div>` +
     `<span class="tag ${s.tag}">${s.who}</span>` +
     `<div class="lab">What happens</div><ul class="pts">${s.pts.map(p => `<li>${p}</li>`).join("")}</ul>` +
-    (s.kv.length ? `<div class="lab">Key parts</div><div class="kv">${s.kv.map(([k, v]) => `<code>${k}</code><span>${v}</span>`).join("")}</div>` : "") +
-    `<div class="lab">What's sent</div><pre class="shape">${esc(s.code)}</pre>`;
+    (s.kv.length ? `<div class="lab">Key parts</div><div class="kv">${kv}</div>` : "") +
+    `<div class="lab">${s.codeLabel || "What’s sent"}</div><pre class="shape">${esc(s.code)}</pre>`;
   $("#wt-count").textContent = `${fi + 1} / ${STEPS.length}`;
   $("#wt-prev").disabled = fi === 0;
   $("#wt-next").disabled = fi === STEPS.length - 1;
@@ -461,10 +521,6 @@ function drawWalk() {
     d.className = "tab"; d.textContent = `${i + 1} ${s.short}`;
     d.onclick = () => { fi = i; drawWalk(); };
     $("#wt-dots").appendChild(d);
-    const p = document.createElement("button");
-    p.className = "tab"; p.textContent = `${i + 1} ${s.short}`;
-    p.onclick = () => openWalk(i);
-    $("#wt-pills").appendChild(p);
   });
   window.openWalk = function (i) {
     if (i != null) fi = i;
@@ -478,7 +534,21 @@ function drawWalk() {
     document.body.style.overflow = "";
     $("#wt-open").focus();
   }
-  $("#wt-open").onclick = () => openWalk();
+
+  // The inline preview: a small live picture of the widget that cycles through the steps.
+  let pi = 0;
+  function drawPreview() {
+    drawDiagram($("#wtp-svg"), pi, "p");
+    const s = STEPS[pi];
+    $("#wtp-info").innerHTML =
+      `<span class="num">${pi + 1}</span><div><div class="wtp-step">Step ${pi + 1} of ${STEPS.length}</div><div class="wtp-t">${s.title}</div>` +
+      `<div class="wtp-hint">Click anywhere to open full screen</div></div>`;
+  }
+  drawPreview();
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches)
+    setInterval(() => { if (wt.hidden) { pi = (pi + 1) % STEPS.length; drawPreview(); } }, 2000);
+  $("#wt-preview").onclick = () => openWalk(pi);
+
   $("#wt-close").onclick = closeWalk;
   $("#wt-prev").onclick = () => { if (fi > 0) { fi--; drawWalk(); } };
   $("#wt-next").onclick = () => { if (fi < STEPS.length - 1) { fi++; drawWalk(); } };

@@ -13,7 +13,7 @@ const prev = list[i - 1], next = list[i + 1];
   <article class="article">
     <header class="container a-hero">
       <a class="crumb" href={`/articles/${s.slug}`}><Icon name="arrowLeft" /> {s.title}</a>
-      <div><span class="eyebrow">Part {article.n} of {list.length} · {article.kind === 'interactive' ? 'Interactive' : 'Article'}</span></div>
+      <div><span class="eyebrow">Part {article.n} of {list.length}</span></div>
       <h1>{article.title}</h1>
       <p class="a-desc">{article.desc}</p>
     </header>
