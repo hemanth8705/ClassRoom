@@ -1,9 +1,10 @@
 /*
-  Design tokens. One theme: black and white.
+  Design tokens. Two themes, both pure black and white: dark (default) and light.
   Every page, icon and diagram reads colour from these variables, never from a hex value.
   Semantic states (visible / private / risk) are told apart by weight and outline, not hue.
 */
-:root {
+:root,
+:root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #000000;
   --bg-2: #060606;
@@ -25,9 +26,38 @@
   --icon: #ffffff;
   --icon-tile: rgba(255, 255, 255, .05);
   --shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 18px 50px -20px rgba(0, 0, 0, .8);
+  --pop-shadow: 0 24px 60px -16px rgba(0, 0, 0, .9);
 
+}
+
+:root {
   --serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
   --sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono Variable", ui-monospace, "Cascadia Code", Consolas, monospace;
   --radius: 14px;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --bg-2: #fafafa;
+  --card: #fafafa;
+  --card-2: #f2f2f2;
+  --ink: #000000;
+  --ink-2: #444444;
+  --muted: #777777;
+  --line: #e6e6e6;
+  --line-2: #cfcfcf;
+  --accent: #000000;
+  --accent-soft: rgba(0, 0, 0, .06);
+  --accent2: #666666;
+  --code: #f5f5f5;
+  --good: #000000;  --good-soft: rgba(0, 0, 0, .07);
+  --bad: #333333;   --bad-soft: rgba(0, 0, 0, .04);
+  --warn: #666666;  --warn-soft: rgba(0, 0, 0, .02);
+  --glow: rgba(0, 0, 0, .04);
+  --icon: #000000;
+  --icon-tile: rgba(0, 0, 0, .04);
+  --shadow: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 14px 40px -24px rgba(0, 0, 0, .25);
+  --pop-shadow: 0 20px 50px -18px rgba(0, 0, 0, .3);
 }

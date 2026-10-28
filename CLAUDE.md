@@ -4,16 +4,17 @@
 Astro static site, deployed on Vercel from this repo (Vercel project Root Directory = `site`, framework Astro).
 - Live article pages: `site/src/articles/*.html` (fragments: style + markup + script). Register each one in `site/src/data/articles.ts`.
 - `authentication/` and `text-to-image/` hold the original standalone pages and the markdown source (`1_text-to-image.md` is read by the site). The HTML copies in `site/src/articles/` are what gets published; edit those.
-- Design system: `site/src/styles/theme.css` (one theme: pure black and white, no colour), `base.css` (site chrome), `article.css` (skin for article bodies). Live reference at `/design`. No theme switcher.
-- Colours come from CSS variables only. No hex values in new article code. - Icons: custom SVG set in `site/src/components/Sprite.astro`, used as `<svg class="ico"><use href="#i-name"/></svg>`. **No emoji anywhere.** Add new icons to the sprite, same 24px grid and 1.6 stroke.
-- Look: dark, minimal, editorial. Instrument Serif for headlines, Inter for body, JetBrains Mono for labels and code. Black and white only. Hairline borders, no heavy shadows, no gradients except the soft top glow.
-- Check any change in a real render (`npm run build`, then a headless screenshot) at desktop and phone width.
+- Design system: `site/src/styles/theme.css` (two themes, both pure black and white: dark by default, light via the sun/moon switch in the header; no colour), `base.css` (site chrome), `article.css` (skin for article bodies). Live reference at `/design`.
+- Colours come from CSS variables only. No hex values in new article code. Every page must look right in both dark and light.
+- Icons: custom SVG set in `site/src/components/Sprite.astro`, used as `<svg class="ico"><use href="#i-name"/></svg>`. **No emoji anywhere.** Add new icons to the sprite, same 24px grid and 1.6 stroke.
+- Look: dark, minimal, editorial. Instrument Serif for headlines, Inter for body, JetBrains Mono for labels and code. Black and white only, in both themes. Hairline borders, no heavy shadows, no gradients except the soft top glow.
+- Check any change in a real render (`npm run build`, then a headless screenshot) at desktop and phone width, in both themes.
 
 Backend engineering articles, written as single-file interactive HTML pages. Two folders:
 
 - `authentication/` — OAuth and auth articles
 - `text-to-image/` — text-to-image articles
-- `site/` is gitignored. Leave it alone.
+- `site/` is the website (see above), tracked in git.
 
 Name article files with a number prefix, e.g. `1_oauth.html`, so the reading order is clear.
 
@@ -39,7 +40,7 @@ If a click, toggle or slider changes something on the page, the result must appe
 Every code snippet on a page is Python. Use Flask and `requests` for backend examples. Raw HTTP messages and JSON payloads (a protocol, not code) are fine as they are. Do not add JavaScript, Node, or other languages to the visible examples. The page's own scripting is still JS.
 
 ### Voice
-Read `.claude/skills/classroom-writing/SKILL.md` before writing or editing any article copy. In one line: every sentence sounds like a person teaching you, with a scenario first, who-does-what, and a reason for everything. It also defines the hover-glossary for unfamiliar terms (dotted underline, a dialog that stays open, and an "Explain X" Google link).
+Read `.claude/skills/classroom-writing/SKILL.md` before writing or editing any article copy. In one line: **the audience is engineers and developers revising a concept**, not beginners. Open straight on the mechanism, answer the pushback questions (why is X public? what is inside Y? how do I verify it?), be precise, and say who does what and why in plain, short sentences. No problem/backstory section, no cast-of-characters section. It also defines the hover-glossary for unfamiliar terms (dotted underline, a dialog that stays open, and an "Explain X" Google link).
 
 ### Structure
 - Explain the idea first (problem, players, flow), then the implementation (setup, code). Don't mix them.

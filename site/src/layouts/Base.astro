@@ -28,7 +28,11 @@ const nav = [
   <meta name="theme-color" content="#000000" />
   <meta property="og:title" content={fullTitle} />
   <meta property="og:description" content={description} />
-  </head>
+  <script is:inline>
+    // Set the theme before first paint so there is no flash. Dark is the default.
+    try { document.documentElement.dataset.theme = localStorage.getItem('theme') === 'light' ? 'light' : 'dark'; } catch (e) { document.documentElement.dataset.theme = 'dark'; }
+  </script>
+</head>
 <body>
   <Sprite />
   <header class="site">
@@ -40,6 +44,11 @@ const nav = [
       <nav class="main" aria-label="Main">
         {nav.map(([href, label]) => <a href={href} class={path.startsWith(href) ? 'on' : ''}>{label}</a>)}
       </nav>
+      <button class="theme-toggle" id="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Light mode">
+        <svg class="ico sun"><use href="#i-sun" /></svg>
+        <svg class="ico moon"><use href="#i-moon" /></svg>
+        <span class="thumb"></span>
+      </button>
     </div>
   </header>
 
@@ -52,6 +61,20 @@ const nav = [
     </div>
   </footer>
 
+  <script is:inline>
+    // Light / dark switch. aria-checked is "true" when light is on.
+    (function () {
+      var btn = document.getElementById('theme-toggle');
+      function sync() { btn.setAttribute('aria-checked', String(document.documentElement.dataset.theme === 'light')); }
+      btn.addEventListener('click', function () {
+        var next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem('theme', next); } catch (e) {}
+        sync();
+      });
+      sync();
+    })();
+  </script>
 
   <script is:inline>
     // Hover (or focus, or tap) a .term to read its definition. The box stays open while you read it.

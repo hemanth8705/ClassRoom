@@ -94,43 +94,25 @@ ol.plain li { margin: 6px 0; }
 .wtp-t { font: 400 1.6rem/1.15 var(--serif); margin: 6px 0 12px; color: var(--ink); }
 .wtp-hint { font: 400 .78rem var(--mono); color: var(--muted); }
 @media (max-width: 700px) { .wtp-body { grid-template-columns: 1fr; } }
+.jwt { font-family: var(--mono); font-size: .8rem; line-height: 1.7; word-break: break-all; }
+.jwt .chunk { cursor: pointer; padding: 1px 3px; border-radius: 4px; border: 1px solid transparent; }
+.jwt .chunk:hover { border-color: var(--line-2); }
+.jwt .chunk.on { background: var(--accent-soft); border-color: var(--muted); color: var(--ink); }
+.jwt .dot { color: var(--muted); padding: 0 1px; }
+#jwt-panel h3 { margin-top: 0; }
+#jwt-panel .lab { margin: 12px 0 6px; font: 700 .7rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+#jwt-panel pre.shape { margin: 0; font-size: .78rem; }
+#jwt-panel pre.wrap { white-space: pre-wrap; word-break: break-all; }
+#jwt-panel ul.pts { font-size: .92rem; margin-top: 12px; }
+#jwt-demo, #jwt-demo + h3 { margin-top: 14px; }
 </style>
 <div class="frag-main">
-
-<!-- ================= PROBLEM ================= -->
-<section id="problem">
-  <span class="step">THE PROBLEM</span>
-  <h2>Every app wants a password. That's a bad deal.</h2>
-  <p>Say you're building a calendar app. Your users have to sign up, so you store a password for each one of them.</p>
-  <p>Now you're sitting on a database that hackers would love to steal. Most people use the same password everywhere, so when your database leaks, their other accounts go down with it. You'd also have to build password resets, and tell everyone when you get breached. And making people create yet another email and password is a bad experience on its own.</p>
-  <p>Continuing with Google is much simpler. Google already verifies your users. Your user just tells Google, <b>"vouch for me,"</b> and Google tells your app that this is a real person.</p>
-  <p>That's <b>OAuth</b>. You hand the login job to a company your users already trust. Your app never sees a password. All it gets is a token that says: Google checked this person, and they're allowing you to see these details.</p>
-
-  <div class="callout blue">
-    <b>Think of a hotel keycard.</b> You don't hand a guest the key to your house. The front desk prints a card that opens room 204 only, and stops working at checkout. Google is the front desk. The token is the keycard.
-  </div>
-</section>
-
-<!-- ================= PLAYERS ================= -->
-<section id="players">
-  <span class="step">THE CAST</span>
-  <h2>In this article, you'll keep meeting four names</h2>
-  <p>Click each one to see who it is.</p>
-  <div class="row">
-    <div class="grow">
-      <svg viewBox="0 0 400 250" width="100%" role="img" aria-label="Four roles in OAuth">
-        <g id="cast"></g>
-      </svg>
-    </div>
-    <div class="grow card" id="cast-info" style="min-height:120px"></div>
-  </div>
-</section>
 
 <!-- ================= FLOW ================= -->
 <section id="flow">
   <span class="step">THE FLOW</span>
-  <h2>We've split the flow into 8 steps</h2>
-  <p>This is the Authorization Code flow, the one you should use. Go through the steps below one by one. Hit maximize for the full-screen view, and use the arrow keys to move.</p>
+  <h2>Authorization Code flow with PKCE, in 8 steps</h2>
+  <p>Step through it below. Hit maximize for the full-screen view, and use ← and → to move between steps.</p>
 
   <div class="wtp" id="wt-preview">
     <div class="wtp-bar">
@@ -149,6 +131,49 @@ ol.plain li { margin: 6px 0; }
   </div>
 </section>
 
+<!-- ================= STATE + PKCE ================= -->
+<section id="whypublic">
+  <span class="step">STATE AND PKCE</span>
+  <h2><span class="term" tabindex="0" data-term="state">state</span> and <span class="term" tabindex="0" data-term="pkce">code_challenge</span> are public. Why send them?</h2>
+  <p>Both go out in the step 2 URL, so anyone watching the browser can read them. That's fine, because neither one is a secret. Each is a check your server makes later: you keep your own copy, and what comes back has to match it.</p>
+
+  <div class="scroll">
+  <table>
+    <tr><th></th><th>state</th><th>code_challenge (PKCE)</th></tr>
+    <tr><th>What it is</th><td>A random string, one per login attempt</td><td><code>BASE64URL(SHA-256(code_verifier))</code></td></tr>
+    <tr><th>Visible to anyone?</th><td>Yes, in steps 2 and 4</td><td>Yes, in step 2</td></tr>
+    <tr><th>What your server keeps</th><td>The same value, tied to this browser's session</td><td>The <code>code_verifier</code>, tied to this session. It isn't sent until step 5</td></tr>
+    <tr><th>Checked when</th><td>Step 4: the returned <code>state</code> must equal the saved one</td><td>Step 5: Google hashes your verifier and compares it with the challenge it stored</td></tr>
+    <tr><th>It stops</th><td>Forged callbacks (<span class="term" tabindex="0" data-term="csrf">login CSRF</span>)</td><td>Stolen authorization codes</td></tr>
+    <tr><th>Why public is fine</th><td>An attacker can read a <code>state</code>, but can't make your user's session hold it</td><td>SHA-256 is one-way, so the challenge doesn't reveal the verifier</td></tr>
+  </table>
+  </div>
+
+  <pre class="shape" style="margin-top:16px"># Step 2: make both values, keep the secret half, send only the public half
+state     = secrets.token_urlsafe(16)
+verifier  = secrets.token_urlsafe(32)                                   # stays on your server
+challenge = b64url(hashlib.sha256(verifier.encode()).digest())          # goes in the URL</pre>
+
+  <h3>Try the two attacks</h3>
+  <p>Switch a defence on or off, then run the attack.</p>
+  <div class="two">
+    <div class="card">
+      <h3>1. The fake callback link</h3>
+      <p>An attacker signs in with their own Google account, grabs the callback link with their code in it, and sends it to your user. Your user clicks it.</p>
+      <label><input type="checkbox" id="a1-on" checked> App checks <span class="term" tabindex="0" data-term="state">state</span></label><br><br>
+      <button class="btn" id="a1-run">Run attack</button>
+      <div class="result" id="a1-res"></div>
+    </div>
+    <div class="card">
+      <h3>2. The stolen code</h3>
+      <p>A browser extension, or a leaked log, copies the <code>code</code> from the step 4 URL and races your app to Google.</p>
+      <label><input type="checkbox" id="a2-on" checked> App uses <span class="term" tabindex="0" data-term="pkce">PKCE</span></label><br><br>
+      <button class="btn" id="a2-run">Run attack</button>
+      <div class="result" id="a2-res"></div>
+    </div>
+  </div>
+</section>
+
 <!-- ================= TOKENS ================= -->
 <section id="tokens">
   <span class="step">WHAT YOU GET BACK</span>
@@ -164,33 +189,52 @@ ol.plain li { margin: 6px 0; }
   </table>
   </div>
   <p class="note">You only get a <span class="term" tabindex="0" data-term="refresh_token">refresh token</span> if you ask for it with <code>access_type=offline</code>. Google sends it the first time the user agrees. Add <code>prompt=consent</code> and you get a fresh one on every login.</p>
+</section>
 
-  <h3>Let's open an ID token</h3>
-  <p>The <span class="term" tabindex="0" data-term="id_token">ID token</span> is a <span class="term" tabindex="0" data-term="jwt">JWT</span>: three chunks joined by dots. The middle chunk is your user's details, written as JSON and then encoded. Press the button and we'll decode it.</p>
-  <div id="jwt-demo">
-    <div class="row">
-      <div class="grow">
-        <div class="jwt card" id="jwt-view"></div>
-        <div class="flowbox"><button class="btn" id="jwt-btn">Decode the middle part</button></div>
-      </div>
-      <div class="grow">
-        <pre class="shape" id="jwt-json"><span class="empty">Press the button. The decoded middle part shows up here.</span></pre>
+<!-- ================= JWT ================= -->
+<section id="jwt">
+  <span class="step">THE ID TOKEN</span>
+  <h2>What's inside the ID token</h2>
+  <p>The <span class="term" tabindex="0" data-term="id_token">ID token</span> is a <span class="term" tabindex="0" data-term="jwt">JWT</span>: three <span class="term" tabindex="0" data-term="base64url">base64url</span> chunks joined by dots, <code>header.payload.signature</code>. Select a chunk to see what it holds and how it decodes.</p>
+
+  <div class="row" id="jwt-demo">
+    <div class="grow">
+      <div class="jwt card" id="jwt-view"></div>
+      <div class="tabs" id="jwt-tabs"></div>
+    </div>
+    <div class="grow card" id="jwt-panel"></div>
+  </div>
+
+  <h3>Change the payload, then verify</h3>
+  <p>This token is signed with a throwaway key made in your browser, not Google's. The check is real: RS256, using your browser's crypto. Edit the email, then verify.</p>
+  <div class="row">
+    <div class="grow">
+      <div class="flowbox">
+        <label>email: <input id="jwt-email" size="24" value="asha@example.com" style="font:inherit;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></label>
+        <button class="btn alt" id="jwt-check">Verify signature</button>
       </div>
     </div>
+    <div class="grow"><div class="result" id="jwt-res"></div></div>
+  </div>
 
-    <h3>Why the last chunk matters</h3>
-    <p>The last chunk is Google's signature. Change the email below, then check. Your backend compares the signature with Google's public keys, and a changed token fails.</p>
-    <div class="row">
-      <div class="grow">
-        <div class="flowbox">
-          <label>email: <input id="jwt-email" size="24" value="asha@example.com" style="font:inherit;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></label>
-          <button class="btn alt" id="jwt-check">Check signature</button>
-        </div>
-      </div>
-      <div class="grow"><div class="result" id="jwt-res"></div></div>
+  <h3>Decode it, then verify it</h3>
+  <p>Decoding only reads the token. It proves nothing. Verification is what makes the claims trustworthy.</p>
+  <div class="row">
+    <div class="grow">
+      <ol class="plain">
+        <li>Read <code>kid</code> from the header, and check <code>alg</code> is the algorithm you expect (RS256). Your code picks the algorithm, not the token.</li>
+        <li>Fetch Google's public keys (<span class="term" tabindex="0" data-term="jwks">JWKS</span>) from <code>googleapis.com/oauth2/v3/certs</code>, and cache them.</li>
+        <li>Take the key whose <code>kid</code> matches.</li>
+        <li>Verify the signature over <code>header.payload</code>: the first two chunks, exactly as sent, joined by a dot.</li>
+        <li>Only then check the claims: <code>iss</code> is Google, <code>aud</code> is your <code>client_id</code>, <code>exp</code> hasn't passed.</li>
+      </ol>
+    </div>
+    <div class="grow">
+      <div class="tabs" id="jwtc-tabs"></div>
+      <pre class="shape" id="jwtc-view" style="min-height:120px;overflow:auto"></pre>
+      <div class="flowbox"><button class="btn alt" id="jwtc-copy">Copy this piece</button></div>
     </div>
   </div>
-  <p class="note">The check above is simulated. In real code, let your Google client library verify the ID token. Don't write the signature math yourself.</p>
 </section>
 
 <h2 class="part">Now let’s build it</h2>
@@ -240,31 +284,6 @@ $env:CLIENT_ID="xxx"; $env:CLIENT_SECRET="yyy"; python server.py</pre>
   </div>
 </section>
 
-<!-- ================= ATTACKS ================= -->
-<section id="attacks">
-  <span class="step">WHAT CAN GO WRONG</span>
-  <h2>Two small checks stop two real attacks</h2>
-  <p>Remember <span class="term" tabindex="0" data-term="state">state</span> and <span class="term" tabindex="0" data-term="pkce">code_challenge</span> from the login URL? This is why they're there. Switch a defence on or off, then run the attack and see what happens.</p>
-
-  <div class="two">
-    <div class="card">
-      <h3>1. The fake callback link</h3>
-      <p>An attacker signs in with their own Google account, grabs the callback link with their code in it, and sends it to you. You click it.</p>
-      <label><input type="checkbox" id="a1-on" checked> App checks <span class="term" tabindex="0" data-term="state">state</span></label><br><br>
-      <button class="btn" id="a1-run">Run attack</button>
-      <div class="result" id="a1-res"></div>
-    </div>
-    <div class="card">
-      <h3>2. The stolen code</h3>
-      <p>A browser extension, or a leaked log, copies the <code>code</code> from the URL and races your app to Google.</p>
-      <label><input type="checkbox" id="a2-on" checked> App uses <span class="term" tabindex="0" data-term="pkce">PKCE</span></label><br><br>
-      <button class="btn" id="a2-run">Run attack</button>
-      <div class="result" id="a2-res"></div>
-    </div>
-  </div>
-  <p class="note">In short: your app makes up a random <code>state</code>, saves it, and checks that Google returns the same one. With PKCE, your app makes up a secret (<code>code_verifier</code>), sends only its hash (<code>code_challenge</code>) at the start, and reveals the secret when it swaps the code. Whoever started the login is the only one who can finish it.</p>
-</section>
-
 <!-- ================= AUTHN vs AUTHZ ================= -->
 <section id="difference">
   <span class="step">ONE LAST THING</span>
@@ -288,7 +307,7 @@ $env:CLIENT_ID="xxx"; $env:CLIENT_SECRET="yyy"; python server.py</pre>
     <li>Ask for the smallest scopes that work.</li>
     <li>Treat the refresh token like a password, and encrypt it at rest.</li>
     <li>Never use an ID token to call an API, and never use an access token to identify a user.</li>
-    <li>Let a library verify ID tokens.</li>
+    <li>Verify the ID token's signature, <code>iss</code>, <code>aud</code> and <code>exp</code> with a library.</li>
   </ol>
 </section>
 
@@ -325,32 +344,6 @@ function iconUse(name, x, y, size) {
   return el("use", { href: "#i-" + name, x, y, width: size, height: size, fill: "none", stroke: "var(--icon)",
     "stroke-width": 1.6, "stroke-linecap": "round", "stroke-linejoin": "round" });
 }
-
-/* ---------- CAST ---------- */
-const CAST = [
-  { id: "owner",  icon: "user",     name: "Resource owner",  x: 20,  y: 20,  who: "Your user.", text: "The person signing in with Google. The data, like their calendar and Drive, belongs to them, so they decide who gets to see it." },
-  { id: "client", icon: "calendar", name: "Client",          x: 210, y: 20,  who: "Your app, the calendar app you're building.", text: "It's the one asking for access. Confusing name: here \u201cclient\u201d means your app, not the user." },
-  { id: "auth",   icon: "shield",   name: "Auth server",     x: 20,  y: 140, who: "Google's login and consent service.", text: "It checks who the user is, asks what they're okay with, and hands out the tokens." },
-  { id: "res",    icon: "database", name: "Resource server", x: 210, y: 140, who: "Google Calendar's API.", text: "It holds the actual data, and only opens for a valid access token." },
-];
-(function () {
-  const g = $("#cast");
-  CAST.forEach(c => {
-    const grp = el("g", { style: "cursor:pointer", "data-id": c.id });
-    grp.appendChild(el("rect", { x: c.x, y: c.y, width: 170, height: 95, rx: 12, fill: "var(--code)", stroke: "var(--line)", "stroke-width": 2, class: "castbox" }));
-    grp.appendChild(iconUse(c.icon, c.x + 85 - 17, c.y + 14, 34));
-    grp.appendChild(el("text", { x: c.x + 85, y: c.y + 72, "text-anchor": "middle", "font-size": 14, fill: "var(--ink)", "font-weight": 600 }, c.name));
-    grp.addEventListener("click", () => show(c.id));
-    g.appendChild(grp);
-  });
-  function show(id) {
-    const c = CAST.find(x => x.id === id);
-    document.querySelectorAll(".castbox").forEach(r => r.setAttribute("stroke", "var(--line)"));
-    document.querySelector(`[data-id="${id}"] .castbox`).setAttribute("stroke", "var(--accent)");
-    $("#cast-info").innerHTML = `<h3><span class="ico-tile">${I(c.icon)}</span>${c.name}<p><b>${c.who}</b></p><p>${c.text}</p>`;
-  }
-  show("client");
-})();
 
 /* ---------- SCOPES / CONSENT ---------- */
 const SCOPES = [
@@ -407,6 +400,12 @@ window.GLOSSARY = Object.assign(window.GLOSSARY || {}, {
     d: "A signed token that says who just logged in: their ID, email and name. It’s for your backend to read, not for calling APIs." },
   jwt: { t: "JWT", q: "What is a JWT and how does signature verification work?",
     d: "JSON Web Token. Three encoded chunks joined by dots: header, payload, signature. Anyone can read the payload, but only the signature proves it wasn’t changed." },
+  csrf: { t: "login CSRF", q: "What is login CSRF in OAuth and how does the state parameter prevent it?",
+    d: "An attacker tricks your user\u2019s browser into finishing a login the attacker started, so the user ends up signed in to the attacker\u2019s account. A state value tied to the user\u2019s own session blocks it." },
+  base64url: { t: "base64url", q: "What is base64url encoding and how is it different from base64?",
+    d: "Base64 with - and _ in place of + and /, and the = padding dropped, so it\u2019s safe in URLs. To decode, add the padding back first." },
+  jwks: { t: "JWKS", q: "What is JWKS (JSON Web Key Set) and how is it used to verify a JWT signature?",
+    d: "JSON Web Key Set: the public keys a provider publishes at a URL. You pick the one whose kid matches the token and use it to verify the signature." },
   oidc: { t: "OpenID Connect", q: "What is OpenID Connect and how does it relate to OAuth 2.0?",
     d: "A thin layer on top of OAuth that adds login. It’s what gives you the ID token." },
 });
@@ -572,31 +571,146 @@ function keepVisible(e) {
 }
 
 /* ---------- JWT ---------- */
-const b64u = o => btoa(JSON.stringify(o)).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
-const JWT_PAYLOAD = {
-  iss: "https://accounts.google.com", aud: "1234-abc.apps.googleusercontent.com",
-  sub: "110169484474386276334", email: "asha@example.com", name: "Asha Rao",
-  iat: 1790000000, exp: 1790003600,
-};
-const JWT_HEAD = { alg: "RS256", typ: "JWT" };
-const JWT_SIG = "kQ3xV8mT0pLw2dYhR9aZ";
-$("#jwt-view").innerHTML =
-  `<span class="h">${b64u(JWT_HEAD)}</span>.<span class="p">${b64u(JWT_PAYLOAD)}</span>.<span class="s">${JWT_SIG}...</span>`;
-$("#jwt-btn").onclick = () => {
-  const pre = $("#jwt-json");
-  pre.textContent = JSON.stringify(JWT_PAYLOAD, null, 2) +
-    "\n\n// iss: who issued it   aud: which app it's for\n// sub: the user's permanent Google ID (use this, not email, as your key)\n// exp: expiry time";
-  keepVisible($("#jwt-demo"));
-};
-$("#jwt-check").onclick = () => {
-  const r = $("#jwt-res");
-  const same = $("#jwt-email").value === JWT_PAYLOAD.email;
-  r.className = "result " + (same ? "ok" : "fail");
-  r.textContent = same
-    ? "Signature matches. The token is exactly what Google issued."
-    : "Signature does not match. The payload changed after Google signed it. Reject this token.";
-  keepVisible($("#jwt-demo"));
-};
+// A real RS256 token, signed in the browser with a throwaway key (not Google's). Same math as a real ID token.
+(function () {
+  const enc = new TextEncoder();
+  const b64u = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const b64uText = s => b64u(enc.encode(s));
+  const fromB64u = s => atob(s.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - s.length % 4) % 4));
+  const hex = bytes => [...new Uint8Array(bytes)].map(b => b.toString(16).padStart(2, "0")).join(" ");
+
+  const now = Math.floor(Date.now() / 1000);
+  const HEADER = { alg: "RS256", kid: "demo-key-1", typ: "JWT" };
+  const PAYLOAD = {
+    iss: "https://accounts.google.com", aud: "1234-abc.apps.googleusercontent.com",
+    sub: "110169484474386276334", email: "asha@example.com", name: "Asha Rao", iat: now, exp: now + 3600,
+  };
+  const hb = b64uText(JSON.stringify(HEADER)), pb = b64uText(JSON.stringify(PAYLOAD));
+  let sigBytes = null, pubKey = null, sel = 0;
+
+  const CHUNKS = [
+    { name: "1 Header", enc: () => hb, dec: () => JSON.stringify(HEADER, null, 2),
+      pts: ["<code>alg</code>: the algorithm that signed it. Your code fixes the allowed one (RS256) and ignores what the token claims",
+            "<code>kid</code>: which of Google’s public keys to verify with",
+            "<code>typ</code>: always JWT"] },
+    { name: "2 Payload", enc: () => pb, dec: () => JSON.stringify(PAYLOAD, null, 2),
+      pts: ["These are the <em>claims</em>. Anyone can read them, so nothing secret belongs here",
+            "<code>sub</code> is the user’s stable Google ID. Key your users on it, not on the email",
+            "<code>aud</code> must be your <code>client_id</code>. <code>exp</code> is Unix time"] },
+    { name: "3 Signature", enc: () => b64u(sigBytes || new Uint8Array(256)), dec: () => `${sigBytes ? sigBytes.length : 256} raw bytes, not JSON:\n${sigBytes ? hex(sigBytes.slice(0, 14)) : ""} …`,
+      pts: ["Google signs <code>header.payload</code> (the first two chunks, as encoded) with its private key",
+            "RS256 = RSASSA-PKCS1-v1_5 with SHA-256. A 2048-bit key gives 256 bytes",
+            "Change one character in chunk 1 or 2 and verification fails"] },
+  ];
+
+  function drawView() {
+    const sig = b64u(sigBytes || new Uint8Array(256));
+    const cut = s => s.length > 36 ? s.slice(0, 36) + "…" : s;
+    $("#jwt-view").innerHTML = [hb, pb, cut(sig)].map((c, i) =>
+      `<span class="chunk${i === sel ? " on" : ""}" data-i="${i}">${c}</span>`).join('<span class="dot">.</span>');
+    [...$("#jwt-tabs").children].forEach((b, i) => b.classList.toggle("on", i === sel));
+  }
+  function drawPanel() {
+    const c = CHUNKS[sel];
+    const e = c.enc();
+    $("#jwt-panel").innerHTML =
+      `<h3>${c.name}</h3>` +
+      `<div class="lab">Encoded${sel === 2 ? " (shortened)" : ""}</div><pre class="shape wrap">${esc(sel === 2 ? e.slice(0, 64) + "…" : e)}</pre>` +
+      `<div class="lab">Decoded: base64url, then ${sel === 2 ? "raw bytes" : "JSON"}</div><pre class="shape">${esc(c.dec())}</pre>` +
+      `<ul class="pts">${c.pts.map(p => `<li>${p}</li>`).join("")}</ul>`;
+  }
+  function pick(i) { sel = i; drawView(); drawPanel(); }
+
+  CHUNKS.forEach((c, i) => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.textContent = c.name;
+    b.onclick = () => pick(i);
+    $("#jwt-tabs").appendChild(b);
+  });
+  $("#jwt-view").addEventListener("click", e => { const t = e.target.closest(".chunk"); if (t) pick(+t.dataset.i); });
+  drawView(); drawPanel();
+
+  const res = $("#jwt-res");
+  function show(ok, msg) { res.className = "result " + (ok ? "ok" : "fail"); res.innerHTML = msg; keepVisible($("#jwt-demo")); }
+
+  if (!(window.crypto && crypto.subtle)) {
+    $("#jwt-check").onclick = () => show(false, "This check needs a secure context (https or localhost).");
+    return;
+  }
+  (async () => {
+    const keys = await crypto.subtle.generateKey({ name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" }, false, ["sign", "verify"]);
+    pubKey = keys.publicKey;
+    sigBytes = new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", keys.privateKey, enc.encode(hb + "." + pb)));
+    drawView(); drawPanel();
+  })();
+
+  $("#jwt-check").onclick = async () => {
+    if (!pubKey) return show(false, "Still generating the demo key. Try again in a second.");
+    const edited = { ...PAYLOAD, email: $("#jwt-email").value };
+    const input = hb + "." + b64uText(JSON.stringify(edited));
+    const ok = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", pubKey, sigBytes, enc.encode(input));
+    show(ok, ok
+      ? "<b>Signature valid.</b> The header and payload are exactly the bytes that were signed. Next you’d check <code>iss</code>, <code>aud</code> and <code>exp</code>."
+      : "<b>Signature invalid.</b> These bytes aren’t what was signed, so the payload was changed. Reject the token.");
+  };
+})();
+
+/* JWT code tabs (Python) */
+const JWT_CODE = [
+  { name: "Decode by hand", code: `import base64, json
+
+def b64url_decode(chunk: str) -> bytes:
+    # base64url drops the "=" padding, so add it back before decoding
+    return base64.urlsafe_b64decode(chunk + "=" * (-len(chunk) % 4))
+
+header_b64, payload_b64, signature_b64 = id_token.split(".")
+
+header  = json.loads(b64url_decode(header_b64))     # {"alg": "RS256", "kid": "...", "typ": "JWT"}
+payload = json.loads(b64url_decode(payload_b64))    # {"iss": ..., "aud": ..., "sub": ..., "email": ..., "exp": ...}
+signature = b64url_decode(signature_b64)            # raw bytes, not JSON
+
+# This only READS the token. It proves nothing yet.` },
+  { name: "Verify (PyJWT)", code: `import jwt  # pip install "pyjwt[crypto]"
+
+JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs"
+jwks = jwt.PyJWKClient(JWKS_URL)                    # fetches and caches Google's public keys
+
+def verify_id_token(id_token: str) -> dict:
+    key = jwks.get_signing_key_from_jwt(id_token).key    # picks the key by the header's "kid"
+    return jwt.decode(
+        id_token, key,
+        algorithms=["RS256"],                       # you choose the algorithm, not the token
+        audience=CLIENT_ID,                         # aud must be your client_id
+        issuer=["https://accounts.google.com", "accounts.google.com"],
+    )                                               # also checks the signature and exp` },
+  { name: "Verify (google-auth)", code: `from google.oauth2 import id_token                 # pip install google-auth
+from google.auth.transport import requests as g_requests
+
+claims = id_token.verify_oauth2_token(raw_id_token, g_requests.Request(), CLIENT_ID)
+# Checks signature, expiry, audience and issuer. Raises ValueError if anything is off.
+print(claims["sub"], claims["email"])` },
+];
+(function () {
+  let i = 0;
+  const tabs = $("#jwtc-tabs");
+  JWT_CODE.forEach((p, n) => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.textContent = p.name;
+    b.onclick = () => { i = n; draw(); };
+    tabs.appendChild(b);
+  });
+  function draw() {
+    [...tabs.children].forEach((b, n) => b.classList.toggle("on", n === i));
+    $("#jwtc-view").textContent = JWT_CODE[i].code;
+  }
+  draw();
+  $("#jwtc-copy").onclick = async () => {
+    const b = $("#jwtc-copy");
+    try { await navigator.clipboard.writeText(JWT_CODE[i].code); b.textContent = "Copied"; }
+    catch (e) { b.textContent = "Select and copy manually"; }
+    setTimeout(() => b.textContent = "Copy this piece", 1400);
+  };
+})();
 
 /* ---------- CODE ---------- */
 const PIECES = [
@@ -742,7 +856,7 @@ function runAttack(onId, resId, safe, unsafe) {
     const defended = $(onId).checked;
     r.className = "result " + (defended ? "ok" : "fail");
     r.innerHTML = defended ? safe : unsafe;
-    keepVisible($("#attacks"));
+    keepVisible($("#whypublic"));
   };
 }
 runAttack("#a1-on", { btn: "#a1-run", res: "#a1-res" },

@@ -147,9 +147,18 @@ svg.ico { width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; strok
 .term { text-decoration: underline dotted; text-decoration-color: var(--muted); text-decoration-thickness: 1px; text-underline-offset: 4px; cursor: help; border-radius: 3px; transition: text-decoration-color .15s, background .15s; }
 .term:hover, .term:focus-visible { text-decoration-color: var(--ink); background: var(--accent-soft); }
 .term-pop { position: fixed; z-index: 90; width: min(340px, calc(100vw - 24px)); padding: 16px 18px; background: var(--card-2); border: 1px solid var(--line-2); border-radius: 14px;
-  box-shadow: 0 24px 60px -16px rgba(0, 0, 0, .9); font: 400 .88rem/1.6 var(--sans); color: var(--ink-2); text-align: left; }
+  box-shadow: var(--pop-shadow); font: 400 .88rem/1.6 var(--sans); color: var(--ink-2); text-align: left; }
 .term-pop[hidden] { display: none; }
 .term-pop b { display: block; margin-bottom: 6px; font: 500 .72rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); }
 .term-pop p { margin: 0 0 12px; }
 .term-pop a { display: inline-flex; align-items: center; gap: 6px; font: 500 .76rem var(--mono); color: var(--ink); text-decoration: none; padding: 6px 10px; border: 1px solid var(--line-2); border-radius: 8px; }
 .term-pop a:hover { border-color: var(--ink); }
+
+/* ---------- theme switch ---------- */
+.theme-toggle { position: relative; display: inline-flex; align-items: center; justify-content: space-between; width: 58px; height: 30px; padding: 0 7px; cursor: pointer;
+  border: 1px solid var(--line-2); border-radius: 999px; background: var(--card); color: var(--muted); }
+.theme-toggle svg.ico { width: 15px; height: 15px; position: relative; z-index: 1; transition: color .2s; }
+.theme-toggle .thumb { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--ink); transition: transform .25s cubic-bezier(.4, 0, .2, 1); }
+.theme-toggle[aria-checked="false"] .thumb { transform: translateX(28px); }   /* dark: thumb sits under the moon */
+.theme-toggle[aria-checked="false"] .moon { color: var(--bg); }
+.theme-toggle[aria-checked="true"] .sun { color: var(--bg); }

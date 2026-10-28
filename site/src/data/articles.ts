@@ -23,7 +23,7 @@ export const articles: Article[] = [
   { series: 'authentication', slug: 'oauth', n: 1, kind: 'interactive', source: 'html', file: 'oauth.html',
     title: 'Continue with Google: Sundar Pichai is vouching for you',
     short: 'How OAuth works',
-    desc: 'On your behalf, Google tells the app you’re a real person. Here’s how that handshake works, one step at a time, with a working Flask implementation.' },
+    desc: 'A revision of the Authorization Code flow with PKCE: the eight steps, why state and code_challenge are sent in the open, what is inside a JWT and how to verify it, and a working Flask implementation.' },
 
   { series: 'text-to-image', slug: 'words-to-numbers', n: 1, kind: 'article', source: 'md', file: '1_text-to-image',
     title: 'From Words to Numbers', short: 'Words to numbers',
