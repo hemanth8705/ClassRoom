@@ -135,26 +135,26 @@ ol.plain li { margin: 6px 0; }
 <section id="whypublic">
   <span class="step">STATE AND PKCE</span>
   <h2><span class="term" tabindex="0" data-term="state">state</span> and <span class="term" tabindex="0" data-term="pkce">code_challenge</span> are public. Why send them?</h2>
-  <p>Both go out in the step 2 URL, so anyone watching the browser can read them. That's fine, because neither one is a secret. Each is a check your server makes later: you keep your own copy, and what comes back has to match it.</p>
+  <p>Here's the tail end of the step 2 URL:</p>
+  <pre class="shape">…&amp;state=x7f3a9&amp;code_challenge=E9Mel…&amp;code_challenge_method=S256</pre>
+  <p>Anyone watching the browser can read both values. Neither one hides anything, and neither is meant to. Each is a receipt: your server writes down its own copy before the user leaves, then checks what comes back against it. If you can compare a value with something the attacker can't touch, it's safe to send in the open.</p>
 
-  <div class="scroll">
-  <table>
-    <tr><th></th><th>state</th><th>code_challenge (PKCE)</th></tr>
-    <tr><th>What it is</th><td>A random string, one per login attempt</td><td><code>BASE64URL(SHA-256(code_verifier))</code></td></tr>
-    <tr><th>Visible to anyone?</th><td>Yes, in steps 2 and 4</td><td>Yes, in step 2</td></tr>
-    <tr><th>What your server keeps</th><td>The same value, tied to this browser's session</td><td>The <code>code_verifier</code>, tied to this session. It isn't sent until step 5</td></tr>
-    <tr><th>Checked when</th><td>Step 4: the returned <code>state</code> must equal the saved one</td><td>Step 5: Google hashes your verifier and compares it with the challenge it stored</td></tr>
-    <tr><th>It stops</th><td>Forged callbacks (<span class="term" tabindex="0" data-term="csrf">login CSRF</span>)</td><td>Stolen authorization codes</td></tr>
-    <tr><th>Why public is fine</th><td>An attacker can read a <code>state</code>, but can't make your user's session hold it</td><td>SHA-256 is one-way, so the challenge doesn't reveal the verifier</td></tr>
-  </table>
-  </div>
+  <h3>state: did this login start here?</h3>
+  <p>Before redirecting the user, your server makes a random string, stores it in that user's session, and puts the same string in the URL. Google hands it back untouched in step 4, and your callback compares the two.</p>
+  <p>The attack it stops is <span class="term" tabindex="0" data-term="csrf">login CSRF</span>. An attacker signs in to Google with their own account, stops at step 4, and keeps the callback link with their own code in it. Then they send that link to your user. If your callback accepts whatever code it's given, your user's session is now logged in as the attacker, and whatever they save next lands in the attacker's account. With <code>state</code>, the link carries a value your user's session never issued, so the callback rejects it. The attacker can read states all day. What they can't do is plant one in your user's session.</p>
 
-  <pre class="shape" style="margin-top:16px"># Step 2: make both values, keep the secret half, send only the public half
-state     = secrets.token_urlsafe(16)
-verifier  = secrets.token_urlsafe(32)                                   # stays on your server
+  <h3>code_challenge: is this the app that started the login?</h3>
+  <p>The code in step 4 passes through the browser, so it can leak: a browser extension, a proxy log, a referrer header. Whoever gets it first can swap it for tokens. A server-side app is partly covered, because the thief would also need your client secret. <span class="term" tabindex="0" data-term="pkce">PKCE</span> closes the rest of the gap, and current guidance recommends it for every client.</p>
+  <p>Before step 2, your server makes a random <code>code_verifier</code> and keeps it. It sends only the SHA-256 hash of that verifier, the <code>code_challenge</code>. Google stores the hash next to the code it issues. In step 5, your server sends the verifier itself. Google hashes it, compares the result with the stored challenge, and only then hands over tokens. A thief who has the code never saw the verifier, so the check fails. The challenge sitting in the URL doesn't help them either, because SHA-256 can't be run backwards.</p>
+
+  <pre class="shape"># Step 2: keep the secret half, send only the public half
+state     = secrets.token_urlsafe(16)                                   # also saved in the session
+verifier  = secrets.token_urlsafe(32)                                   # saved in the session, never sent yet
 challenge = b64url(hashlib.sha256(verifier.encode()).digest())          # goes in the URL</pre>
 
-  <h3>Try the two attacks</h3>
+  <p><code>state</code> ties the way back to the way out. <code>code_challenge</code> ties the token swap to the login that started it.</p>
+
+<h3>Try the two attacks</h3>
   <p>Switch a defence on or off, then run the attack.</p>
   <div class="two">
     <div class="card">
@@ -178,17 +178,22 @@ challenge = b64url(hashlib.sha256(verifier.encode()).digest())          # goes i
 <section id="tokens">
   <span class="step">WHAT YOU GET BACK</span>
   <h2>Google hands you three tokens</h2>
-  <p>After step 6, your app is holding three tokens. Each one has a different job.</p>
-  <div class="scroll">
-  <table>
-    <tr><th></th><th>Access token</th><th>Refresh token</th><th>ID token</th></tr>
-    <tr><th>Job</th><td>Calls Google's APIs for the user</td><td>Gets a new access token</td><td>Tells your app who just logged in</td></tr>
-    <tr><th>Lives</th><td>About an hour (<code>expires_in: 3599</code>)</td><td>Until the user revokes it</td><td>About an hour</td></tr>
-    <tr><th>Sent to</th><td>Google's API, in a header</td><td>Google's token endpoint only</td><td>Read by your backend only</td></tr>
-    <tr><th>If stolen</th><td>Attacker has access until it expires</td><td>Attacker keeps getting new ones, so guard it</td><td>Not a key. Don't use it to call APIs</td></tr>
-  </table>
-  </div>
-  <p class="note">You only get a <span class="term" tabindex="0" data-term="refresh_token">refresh token</span> if you ask for it with <code>access_type=offline</code>. Google sends it the first time the user agrees. Add <code>prompt=consent</code> and you get a fresh one on every login.</p>
+  <p>Step 6 returns one JSON body with three tokens in it:</p>
+  <pre class="shape">{
+  "access_token":  "ya29.a0AfH6…",
+  "refresh_token": "1//0gLq…",
+  "id_token":      "eyJhbGciOi…"
+}</pre>
+
+  <h3>The access token calls APIs</h3>
+  <p>Your server puts the <span class="term" tabindex="0" data-term="access_token">access token</span> in an <code>Authorization</code> header, and Google checks it, and the scopes behind it, before returning anything. It's short-lived on purpose: <code>expires_in</code> is 3599, so about an hour. If it leaks, the damage ends when it expires.</p>
+
+  <h3>The refresh token keeps the user signed in</h3>
+  <p>When the access token dies, your server sends the <span class="term" tabindex="0" data-term="refresh_token">refresh token</span> to Google's token endpoint and gets a new access token back. No user, no login screen. That convenience is the catch: a refresh token lasts until the user revokes it, so a stolen one means the attacker keeps minting access tokens. Encrypt it at rest, and never send it anywhere except that endpoint.</p>
+  <p>You only get one if you ask for it with <code>access_type=offline</code>. Google sends it the first time the user agrees. Add <code>prompt=consent</code> and you get a fresh one on every login.</p>
+
+  <h3>The ID token says who logged in</h3>
+  <p>The other two are about what your app may do. The <span class="term" tabindex="0" data-term="id_token">ID token</span> is about who just logged in. It's a signed <span class="term" tabindex="0" data-term="jwt">JWT</span> carrying the user's ID, email and name, and your backend reads it once, right after step 6. It isn't a key. Don't send it to an API, and don't use an access token to identify a user. The next section opens one up.</p>
 </section>
 
 <!-- ================= JWT ================= -->
